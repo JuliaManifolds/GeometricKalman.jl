@@ -34,6 +34,8 @@ struct KalmanParameterFittingObjective{
     TM<:AbstractManifold,
     TM_obs<:AbstractManifold,
     TM_obj<:AbstractManifold,
+    TM_fit<:AbstractManifold,
+    TB<:AbstractBasis,
     TFT,
     TH,
     TFKW,
@@ -42,10 +44,13 @@ struct KalmanParameterFittingObjective{
     TRS,
     TRC,
     TRM,
+    TZMC,
 }
     M::TM
     M_obs::TM_obs
     M_obj::TM_obj
+    M_fit::TM_fit
+    jacobian_basis_arg::TB
     f_tilde::TFT
     h::TH
     filter_kwargs::TFKW
@@ -54,6 +59,43 @@ struct KalmanParameterFittingObjective{
     ref_obj_vals::TRS
     ref_controls::TRC
     ref_measurements::TRM
+    zero_M_fit_coordinates::TZMC
+end
+
+"""
+"""
+function make_kalman_parameter_fitting_objective(
+    M::AbstractManifold, # where state evolves
+    M_obs::AbstractManifold, # where observation happen
+    M_obj::AbstractManifold, # where ref_obj_vals and values returned by obj_extractor live
+    M_fit::AbstractManifold, # where arguments to the objective live
+    f_tilde,
+    h,
+    filter_kwargs,
+    kf_parametrization,
+    obj_extractor,
+    ref_obj_vals,
+    ref_controls,
+    ref_measurements;
+    jacobian_basis_arg::AbstractBasis=DefaultOrthonormalBasis(),
+)
+    zero_M_fit_coordinates = zeros(manifold_dimension(M_fit))
+    return KalmanParameterFittingObjective(
+        M,
+        M_obs,
+        M_obj,
+        M_fit,
+        jacobian_basis_arg,
+        f_tilde,
+        h,
+        filter_kwargs,
+        kf_parametrization,
+        obj_extractor,
+        ref_obj_vals,
+        ref_controls,
+        ref_measurements,
+        zero_M_fit_coordinates,
+    )
 end
 
 function objective(pfo::KalmanParameterFittingObjective, p_opt)
@@ -62,7 +104,13 @@ function objective(pfo::KalmanParameterFittingObjective, p_opt)
 end
 
 function jacobian(pfo::KalmanParameterFittingObjective, p_opt)
-    jac = ForwardDiff.jacobian(p -> residuals(pfo, p), p_opt)
+    jac = ForwardDiff.jacobian(
+        pc -> residuals(
+            pfo,
+            exp(pfo.M_fit, p_opt, get_vector(pfo.M_fit, p_opt, pc, pfo.jacobian_basis_arg)),
+        ),
+        pfo.zero_M_fit_coordinates,
+    )
     return jac
 end
 

@@ -4,7 +4,7 @@ using RecursiveArrayTools
 
 using GeometricKalman: gen_car_data, default_discretization, car_h, car_f, car_control
 
-using GeometricKalman: KalmanParameterFittingObjective
+using GeometricKalman: make_kalman_parameter_fitting_objective
 
 @testset "Parameter fitting" begin
     dt = 0.01
@@ -25,6 +25,8 @@ using GeometricKalman: KalmanParameterFittingObjective
     f_tilde = default_discretization(M, car_f_adapted; dt=dt)
 
     M_obj = Euclidean(2)
+    M_fit = ProductManifold(M, SymmetricPositiveDefinite(3))
+    ref_samples = [s.x[1] for s in samples]
 
     sp = WanMerweSigmaPoints(; α=1.0)
     params = [
@@ -81,16 +83,17 @@ using GeometricKalman: KalmanParameterFittingObjective
         )
 
         param = InitialConditionKFOParametrization(Q, R)
-        pfo = KalmanParameterFittingObjective(
+        pfo = make_kalman_parameter_fitting_objective(
             M,
             M_obs,
             M_obj,
+            M_fit,
             f_tilde,
             car_h,
             filter_kwargs,
             param,
-            kf -> kf.p_n,
-            samples,
+            kf -> kf.p_n.x[1],
+            ref_samples,
             controls,
             measurements,
         )
