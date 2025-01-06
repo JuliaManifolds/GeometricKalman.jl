@@ -1,7 +1,9 @@
 
 abstract type AbstractKFPropagator end
 
-instantiate_propagator(::AbstractManifold, propagator::AbstractKFPropagator) = propagator
+function instantiate_propagator(::AbstractManifold, propagator::AbstractKFPropagator, p0)
+    return propagator
+end
 
 abstract type AbstractKFUpdater end
 
@@ -9,6 +11,11 @@ function instantiate_updater(
     ::AbstractManifold,
     ::AbstractManifold,
     updater::AbstractKFUpdater,
+    p0,
+    h,
+    control_prototype,
+    zero_noise_obs,
+    t0::Real,
 )
     return updater
 end
@@ -161,7 +168,12 @@ mutable struct KalmanState{
     TVT<:AbstractVectorTransportMethod,
     TProp<:AbstractKFPropagator,
     TUpd<:AbstractKFUpdater,
-    TCov<:AbstractMatrix{<:Real},
+    TOIR<:AbstractInverseRetractionMethod,
+    TMCA<:AbstractMeasurementCovarianceAdapter,
+    TPCA<:AbstractProcessCovarianceAdapter,
+    TCov_P<:AbstractMatrix{<:Real},
+    TCov_Q<:AbstractMatrix{<:Real},
+    TCov_R<:AbstractMatrix{<:Real},
     TP,
     TF,
     TH,
@@ -169,9 +181,6 @@ mutable struct KalmanState{
     TZNobs,
     TJacWF,
     TJacWH,
-    TOIR<:AbstractInverseRetractionMethod,
-    TMCA<:AbstractMeasurementCovarianceAdapter,
-    TPCA<:AbstractProcessCovarianceAdapter,
 }
     M::TM
     M_obs::TMobs
@@ -183,20 +192,40 @@ mutable struct KalmanState{
     p_n::TP
     t::Float64
     dt::Float64
-    P_n::TCov
-    Q::TCov
-    R::TCov
+    obs_inv_retr::TOIR
+    measurement_covariance_adapter::TMCA
+    process_covariance_adapter::TPCA
+    P_n::TCov_P
+    Q::TCov_Q
+    R::TCov_R
     f_tilde::TF
     h::TH
     zero_noise::TZN
     zero_noise_obs::TZNobs
     jacobian_w_f_tilde::TJacWF
     jacobian_w_h::TJacWH
-    obs_inv_retr::TOIR
-    measurement_covariance_adapter::TMCA
-    process_covariance_adapter::TPCA
 end
 
+"""
+    discrete_kalman_filter_manifold(
+        M::AbstractManifold,
+        M_obs::AbstractManifold,
+        p0,
+        f_tilde,
+        h,
+        P0,
+        Q,
+        R;
+        kwargs...
+    )
+
+Construct a Kalman filter on manifold `M`.
+
+# Keyword arguments
+
+* `control_prototype=nothing`: prototype of the control parameter for `h` and `f_tilde`.
+  Can be used for constructing caches by some algorithms.
+"""
 function discrete_kalman_filter_manifold(
     M::AbstractManifold,
     M_obs::AbstractManifold,
@@ -218,11 +247,13 @@ function discrete_kalman_filter_manifold(
     obs_inv_retr::AbstractInverseRetractionMethod=default_inverse_retraction_method(M_obs),
     measurement_covariance_adapter::AbstractMeasurementCovarianceAdapter=ConstantMeasurementCovarianceAdapter(),
     process_covariance_adapter::AbstractProcessCovarianceAdapter=ConstantProcessCovarianceAdapter(),
+    control_prototype=nothing,
 )
     zero_noise = zeros(size(P0, 1))
     zero_noise_obs = zeros(size(R, 1))
-    instantiated_propagator = instantiate_propagator(M, propagator)
-    instantiated_updater = instantiate_updater(M, M_obs, updater)
+    instantiated_propagator = instantiate_propagator(M, propagator, p0)
+    instantiated_updater =
+        instantiate_updater(M, M_obs, updater, p0, h, control_prototype, zero_noise_obs, t0)
     initial_state = KalmanState(
         M,
         M_obs,
@@ -234,6 +265,9 @@ function discrete_kalman_filter_manifold(
         p0,
         t0,
         dt,
+        obs_inv_retr,
+        measurement_covariance_adapter,
+        process_covariance_adapter,
         P0,
         Q,
         R,
@@ -243,9 +277,6 @@ function discrete_kalman_filter_manifold(
         zero_noise_obs,
         jacobian_w_f_tilde,
         jacobian_w_h,
-        obs_inv_retr,
-        measurement_covariance_adapter,
-        process_covariance_adapter,
     )
     return initial_state
 end
@@ -332,7 +363,8 @@ function get_sigma_points!(
     sigma_points[1] = p_n
     L = manifold_dimension(M)
     λ = sp.α^2 * (L + sp.κ) - L
-    sqrm = sqrt((L + λ) * P_n)
+    #sqrm = sqrt((L + λ) * P_n)
+    sqrm = cholesky(Symmetric((L + λ) * P_n)).L
     X = zero_vector(M, p_n)
     for i in 1:L
         Xc = view(sqrm, i, :)
@@ -384,17 +416,18 @@ struct UnscentedPropagatorCache{
     X::TXV
 end
 
-function instantiate_propagator(M::AbstractManifold, propagator::UnscentedPropagator)
+function instantiate_propagator(M::AbstractManifold, propagator::UnscentedPropagator, p0)
     N = manifold_dimension(M)
     num_sigma_points = 2 * N + 1
-    sigma_point_cache = [rand(M) for _ in 1:num_sigma_points]
+    sigma_point_cache = [allocate(M, p0) for _ in 1:num_sigma_points]
+    Xcsr = Matrix{float(number_eltype(p0))}(undef, N, num_sigma_points)
     mean_weights = Vector{Float64}(undef, num_sigma_points)
     cov_weights = Vector{Float64}(undef, num_sigma_points)
     fill_weights!(mean_weights, cov_weights, propagator.sp, M)
     X = zero_vector(M, sigma_point_cache[1])
     return UnscentedPropagatorCache(
         propagator,
-        Matrix{Float64}(undef, N, num_sigma_points),
+        Xcsr,
         sigma_point_cache,
         mean_weights,
         cov_weights,
@@ -433,7 +466,8 @@ function predict!(kalman::KalmanState, propagator::UnscentedPropagatorCache, con
 
     N = manifold_dimension(kalman.M)
 
-    P_n = zeros(N, N)
+    P_n = similar(kalman.P_n)
+    fill!(P_n, 0)
     for i in 1:length(sigma_points)
         xi = view(propagator.Xcsr, :, i)
         P_n .+= cov_weights[i] .* xi * xi'
@@ -468,6 +502,27 @@ function EKFUpdater(
     return EKFUpdater(jacobian_p_h)
 end
 
+function move_covariance!(kalman::KalmanState, p_n_new, P_n)
+    P_n_e = eigen(P_n)
+    Manopt.eigenvector_transport!(
+        kalman.M,
+        P_n_e,
+        kalman.p_n,
+        p_n_new,
+        kalman.B_state,
+        kalman.vt,
+    )
+    return kalman.P_n = Matrix(P_n_e)
+end
+function move_covariance!(
+    kalman::KalmanState,
+    p_n_new,
+    P_n::AbstractMatrix{<:ForwardDiff.Dual},
+)
+    # don't calculate Jacobian of this correction for now
+    # TODO: find a way to handle it
+end
+
 function update_from_kalman_gain!(
     kalman::KalmanState,
     y_expected,
@@ -485,7 +540,7 @@ function update_from_kalman_gain!(
     p_n_new = exp(kalman.M, kalman.p_n, KyX)
 
     # adapt measurement covariance
-    if true
+    if !(kalman.measurement_covariance_adapter isa ConstantMeasurementCovarianceAdapter)
         hnew = kalman.h(p_n_new, control, kalman.zero_noise_obs, kalman.t)
         residual = inverse_retract(kalman.M_obs, hnew, measurement, kalman.obs_inv_retr)
         # println("innovation norm: ", norm(y_n))
@@ -501,24 +556,15 @@ function update_from_kalman_gain!(
     end
 
     # adapt process covariance
-    if true
+    if !(kalman.process_covariance_adapter isa ConstantProcessCovarianceAdapter)
         L_n = kalman.jacobian_w_f_tilde(kalman.p_n, control, kalman.zero_noise, kalman.t)
         adapt_covariance!(kalman.Q, kalman.process_covariance_adapter, Kyc, L_n)
     end
 
     kalman.P_n -= K_n * S_n * K_n'
     # move covariance to the new point and update Kalman filter state
-    P_n_e = eigen(kalman.P_n)
-    Manopt.eigenvector_transport!(
-        kalman.M,
-        P_n_e,
-        kalman.p_n,
-        p_n_new,
-        kalman.B_state,
-        kalman.vt,
-    )
+    move_covariance!(kalman, p_n_new, kalman.P_n)
     kalman.p_n = p_n_new
-    kalman.P_n = Matrix(P_n_e)
     return kalman
 end
 
@@ -550,10 +596,15 @@ function UnscentedUpdater(;
     )
 end
 
-struct UnscentedUpdaterCache{TUpd<:UnscentedUpdater,TMX<:AbstractMatrix,TXObs} <:
-       AbstractKFUpdater
+struct UnscentedUpdaterCache{
+    TUpd<:UnscentedUpdater,
+    TMX<:AbstractMatrix,
+    TPxy<:AbstractMatrix,
+    TXObs,
+} <: AbstractKFUpdater
     updater::TUpd
     Hcsr::TMX
+    Pxy::TPxy
     X_obs::TXObs
 end
 
@@ -561,15 +612,19 @@ function instantiate_updater(
     M::AbstractManifold,
     M_obs::AbstractManifold,
     updater::UnscentedUpdater,
+    p0,
+    h,
+    control_prototype,
+    zero_noise_obs,
+    t0::Real,
 )
     N = manifold_dimension(M)
+    N_obs = manifold_dimension(M_obs)
     num_sigma_points = 2 * N + 1
-    X_obs = zero_vector(M_obs, rand(M_obs))
-    return UnscentedUpdaterCache(
-        updater,
-        Matrix{Float64}(undef, manifold_dimension(M_obs), num_sigma_points),
-        X_obs,
-    )
+    X_obs = zero_vector(M_obs, h(p0, control_prototype, zero_noise_obs, t0))
+    Hcsr = Matrix{float(eltype(X_obs))}(undef, manifold_dimension(M_obs), num_sigma_points)
+    Pxy = similar(Hcsr, N, N_obs)
+    return UnscentedUpdaterCache(updater, Hcsr, Pxy, X_obs)
 end
 
 function update!(kalman::KalmanState, upd::UnscentedUpdaterCache, control, measurement)
@@ -606,7 +661,8 @@ function update!(kalman::KalmanState, upd::UnscentedUpdaterCache, control, measu
         )
     end
     N_obs = manifold_dimension(kalman.M_obs)
-    S_n = zeros(N_obs, N_obs)
+    S_n = similar(upd.Hcsr, N_obs, N_obs)
+    fill!(S_n, 0)
     for i in 1:length(sigma_points)
         ci = view(upd.Hcsr, :, i)
         S_n .+= cov_weights[i] .* ci * ci'
@@ -616,12 +672,13 @@ function update!(kalman::KalmanState, upd::UnscentedUpdaterCache, control, measu
     W_n = kalman.jacobian_w_h(kalman.p_n, control, kalman.zero_noise_obs, kalman.t)
     S_n += W_n * kalman.R * W_n'
     # cross-covariance
-    Pxy = zeros(manifold_dimension(kalman.M), N_obs)
+    fill!(kalman.updater.Pxy, 0)
     for i in 1:length(sigma_points)
-        Pxy .+= cov_weights[i] .* view(kalman.propagator.Xcsr, :, i) * view(upd.Hcsr, :, i)'
+        kalman.updater.Pxy .+=
+            cov_weights[i] .* view(kalman.propagator.Xcsr, :, i) * view(upd.Hcsr, :, i)'
     end
     # Kalman gain
-    K_n = Pxy / S_n
+    K_n = kalman.updater.Pxy / S_n
 
     # final updates
     update_from_kalman_gain!(kalman, y_expected, control, measurement, K_n, S_n, W_n, HPHT)

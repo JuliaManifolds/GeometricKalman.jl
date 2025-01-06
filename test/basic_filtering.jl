@@ -2,6 +2,8 @@ using GeometricKalman, Test, LinearAlgebra, Distributions
 using Manifolds
 using RecursiveArrayTools
 
+using GeometricKalman: default_discretization, car_f, car_h
+
 @testset "Basic filtering" begin
     dt = 0.01
     vt = 5

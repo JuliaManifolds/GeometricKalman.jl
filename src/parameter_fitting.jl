@@ -80,7 +80,11 @@ function residuals(pfo::KalmanParameterFittingObjective, p_opt)
         pfo.filter_kwargs...,
     )
 
-    res = Vector{Float64}(undef, length(pfo.ref_controls))
+    res =
+        Vector{Base.promote_op(+, number_eltype(p_opt), number_eltype(pfo.ref_obj_vals[1]))}(
+            undef,
+            length(pfo.ref_controls),
+        )
     for i in eachindex(pfo.ref_obj_vals)
         obj_kf = pfo.obj_extractor(kf)
         obj_ref = pfo.ref_obj_vals[i]

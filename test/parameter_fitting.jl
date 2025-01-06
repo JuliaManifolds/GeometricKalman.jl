@@ -96,5 +96,9 @@ using GeometricKalman: KalmanParameterFittingObjective
         )
         p_obj_0 = ArrayPartition(p0, P0)
         @test GeometricKalman.objective(pfo, p_obj_0) isa Real
+        @test GeometricKalman.residuals(pfo, p_obj_0) isa Vector{<:Real}
+        if name in ["EKF", "UKF"]
+            @test GeometricKalman.jacobian(pfo, p_obj_0) isa Matrix{<:Real}
+        end
     end
 end
