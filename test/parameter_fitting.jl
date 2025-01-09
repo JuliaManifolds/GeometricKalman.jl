@@ -1,5 +1,5 @@
 using GeometricKalman, Test, LinearAlgebra, Distributions
-using Manifolds
+using Manifolds, Manopt
 using RecursiveArrayTools
 
 using GeometricKalman: gen_car_data, default_discretization, car_h, car_f, car_control
@@ -25,7 +25,9 @@ using GeometricKalman: make_kalman_parameter_fitting_objective
     f_tilde = default_discretization(M, car_f_adapted; dt=dt)
 
     M_obj = Euclidean(2)
-    M_fit = ProductManifold(M, SymmetricPositiveDefinite(3))
+    M_SPD = SymmetricPositiveDefinite(3)
+    MLC = MetricManifold(SymmetricPositiveDefinite(3), Manifolds.LogCholeskyMetric())
+    M_fit = ProductManifold(M, MLC)
     ref_samples = [s.x[1] for s in samples]
 
     sp = WanMerweSigmaPoints(; α=1.0)
@@ -73,7 +75,7 @@ using GeometricKalman: make_kalman_parameter_fitting_objective
         kf = discrete_kalman_filter_manifold(
             M,
             M_obs,
-            p0,
+            copy(M, p0),
             f_tilde,
             car_h,
             P0,
@@ -98,10 +100,46 @@ using GeometricKalman: make_kalman_parameter_fitting_objective
             measurements,
         )
         p_obj_0 = ArrayPartition(p0, P0)
-        @test GeometricKalman.objective(pfo, p_obj_0) isa Real
-        @test GeometricKalman.residuals(pfo, p_obj_0) isa Vector{<:Real}
+        p0_fit = ArrayPartition((
+            ArrayPartition((
+                [-0.8130014698819994, 0.3488192469303957],
+                [
+                    0.9557783729864522 -0.294087914969946
+                    0.294087914969946 0.9557783729864522
+                ],
+            )),
+            [
+                1.7876311836310539 -0.037296495926160356 -0.011256525508958892
+                -0.037296495926160356 1.703958045682071 0.13081016832413883
+                -0.011256525508958892 0.13081016832413883 1.8699978699525148
+            ],
+        ))
+        @test GeometricKalman.objective(pfo, p0_fit) isa Real
+        @test GeometricKalman.residuals(pfo, p0_fit) isa Vector{<:Real}
         if name in ["EKF", "UKF"]
-            @test GeometricKalman.jacobian(pfo, p_obj_0) isa Matrix{<:Real}
+            @test GeometricKalman.jacobian(pfo, p0_fit) isa Matrix{<:Real}
+
+            f!(::AbstractManifold, V, p) = GeometricKalman.residuals!(pfo, V, p)
+            JF!(::AbstractManifold, J, p) = GeometricKalman.jacobian!(pfo, J, p)
+
+            nlso = NonlinearLeastSquaresObjective(
+                f!,
+                JF!,
+                length(ref_samples);
+                evaluation=InplaceEvaluation(),
+            )
+
+            lm_fit = LevenbergMarquardt(
+                M_fit,
+                nlso,
+                p0_fit;
+                return_state=true,
+                stopping_criterion=StopAfterIteration(50) | StopWhenGradientNormLess(1e-4),
+                expect_zero_residual=true,
+            )
+            # maybe we should allow for some tolerance?
+            @test GeometricKalman.objective(pfo, lm_fit.state.p) <=
+                  GeometricKalman.objective(pfo, p_obj_0)
         end
     end
 end

@@ -114,7 +114,48 @@ function jacobian(pfo::KalmanParameterFittingObjective, p_opt)
     return jac
 end
 
+function jacobian!(pfo::KalmanParameterFittingObjective, jac, p_opt)
+    ForwardDiff.jacobian!(
+        jac,
+        pc -> residuals(
+            pfo,
+            exp(pfo.M_fit, p_opt, get_vector(pfo.M_fit, p_opt, pc, pfo.jacobian_basis_arg)),
+        ),
+        pfo.zero_M_fit_coordinates,
+    )
+    return jac
+end
+
 function residuals(pfo::KalmanParameterFittingObjective, p_opt)
+    res =
+        Vector{Base.promote_op(+, number_eltype(p_opt), number_eltype(pfo.ref_obj_vals[1]))}(
+            undef,
+            length(pfo.ref_controls),
+        )
+    residuals!(pfo, res, p_opt)
+    return res
+end
+
+distance_squared(M::AbstractManifold, p, q) = distance(M, p, q)^2
+# square root can't be effectively AD'd through at 0
+function distance_squared(M::Euclidean, p, q)
+    # Inspired by euclidean distance calculation in Distances.jl
+    # Much faster for large p, q than a naive implementation
+    @boundscheck if axes(p) != axes(q)
+        throw(DimensionMismatch("At last one of $p and $q does not belong to $M"))
+    end
+    s = zero(eltype(p))
+    @inbounds begin
+        @simd for I in eachindex(p, q)
+            p_i = p[I]
+            q_i = q[I]
+            s += abs2(p_i - q_i)
+        end
+    end
+    return s
+end
+
+function residuals!(pfo::KalmanParameterFittingObjective, res, p_opt)
     p0, P0, Q, R = get_inits(pfo.kf_parametrization, p_opt)
     kf = discrete_kalman_filter_manifold(
         pfo.M,
@@ -128,15 +169,10 @@ function residuals(pfo::KalmanParameterFittingObjective, p_opt)
         pfo.filter_kwargs...,
     )
 
-    res =
-        Vector{Base.promote_op(+, number_eltype(p_opt), number_eltype(pfo.ref_obj_vals[1]))}(
-            undef,
-            length(pfo.ref_controls),
-        )
     for i in eachindex(pfo.ref_obj_vals)
         obj_kf = pfo.obj_extractor(kf)
         obj_ref = pfo.ref_obj_vals[i]
-        res[i] = distance(pfo.M_obj, obj_ref, obj_kf)
+        res[i] = distance_squared(pfo.M_obj, obj_ref, obj_kf)
         predict!(kf, pfo.ref_controls[i])
         update!(kf, pfo.ref_controls[i], pfo.ref_measurements[i])
     end
