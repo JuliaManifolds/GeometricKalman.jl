@@ -4,3 +4,58 @@ function default_discretization(M::AbstractManifold, f; dt::Real=0.01)
         return exp(M, p, f(p, q, w, t), dt)
     end
 end
+
+struct InvariantExponentialRetraction <: AbstractRetractionMethod end
+
+function ManifoldsBase.retract(M::AbstractManifold, p, X, ::InvariantExponentialRetraction)
+    return exp_inv(M, p, X)
+end
+
+function ManifoldsBase.retract(
+    M::AbstractDecoratorManifold,
+    p,
+    X,
+    ierm::InvariantExponentialRetraction,
+)
+    return invoke(
+        retract,
+        Tuple{AbstractManifold,Any,Any,InvariantExponentialRetraction},
+        M,
+        p,
+        X,
+        ierm,
+    )
+end
+
+function gen_data(
+    M::AbstractManifold,
+    p0,
+    fun_f,
+    fun_h,
+    fun_control,
+    noise_f_distr,
+    noise_h_distr;
+    N::Int=100,
+    dt::Real=0.01,
+    f_kwargs=(;),
+    retraction::AbstractRetractionMethod=InvariantExponentialRetraction(),
+)
+    samples = [p0]
+    controls = []
+    measurements = [fun_h(p0, fun_control(0.0), rand(noise_h_distr), 0.0)]
+    p_i = p0
+    for i in 1:N
+        t = (i - 1) * dt
+        noise_f = sqrt(dt) * rand(noise_f_distr)
+        noise_h = rand(noise_h_distr)
+        ut = fun_control(t)
+        # println(noise_f)
+        X = dt * fun_f(p_i, ut, noise_f, t; f_kwargs...)
+        p_i = retract(M, p_i, X, retraction)
+        push!(samples, p_i)
+        push!(controls, ut)
+        push!(measurements, fun_h(p_i, ut, noise_h, t))
+    end
+    push!(controls, fun_control(N * dt))
+    return samples, controls, measurements
+end

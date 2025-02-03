@@ -489,8 +489,8 @@ function EKFUpdater(
     M::AbstractManifold,
     M_obs::AbstractManifold,
     h,
-    B_M::AbstractBasis{ℝ},
-    B_M_obs::AbstractBasis{ℝ},
+    B_M::AbstractBasis{ℝ}=DefaultOrthonormalBasis(),
+    B_M_obs::AbstractBasis{ℝ}=DefaultOrthonormalBasis(),
 )
     jacobian_p_h = default_jacobian_p_discrete(
         M,

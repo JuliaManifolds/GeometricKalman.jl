@@ -2,7 +2,7 @@ module GeometricKalman
 
 using LinearAlgebra
 
-using Manifolds
+using ManifoldsBase, Manifolds
 using Manopt
 
 using StatsBase

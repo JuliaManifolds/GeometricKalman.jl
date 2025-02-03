@@ -2,7 +2,7 @@ using GeometricKalman, Test, LinearAlgebra, Distributions
 using Manifolds
 using RecursiveArrayTools
 
-using GeometricKalman: default_discretization, car_f, car_h
+using GeometricKalman: default_discretization, car_f, car_h, gen_car_data
 
 @testset "Basic filtering" begin
     dt = 0.01
@@ -28,13 +28,7 @@ using GeometricKalman: default_discretization, car_f, car_h
             "EKF",
             (;
                 propagator=EKFPropagator(M, f_tilde, DefaultOrthonormalBasis()),
-                updater=EKFUpdater(
-                    M,
-                    M_obs,
-                    car_h,
-                    DefaultOrthonormalBasis(),
-                    DefaultOrthonormalBasis(),
-                ),
+                updater=EKFUpdater(M, M_obs, car_h),
             ),
         ),
         (
@@ -48,13 +42,7 @@ using GeometricKalman: default_discretization, car_f, car_h
             "EKF adaptive α=0.99",
             (;
                 propagator=EKFPropagator(M, f_tilde, DefaultOrthonormalBasis()),
-                updater=EKFUpdater(
-                    M,
-                    M_obs,
-                    car_h,
-                    DefaultOrthonormalBasis(),
-                    DefaultOrthonormalBasis(),
-                ),
+                updater=EKFUpdater(M, M_obs, car_h),
                 measurement_covariance_adapter=CovarianceMatchingMeasurementCovarianceAdapter(
                     0.99,
                 ),
