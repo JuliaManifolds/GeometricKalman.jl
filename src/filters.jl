@@ -289,7 +289,11 @@ mutable struct EKFPropagator{TJacPF} <: AbstractKFPropagator
     jacobian_p_f_tilde::TJacPF
 end
 
-function EKFPropagator(M::AbstractManifold, f, B_M::AbstractBasis{ℝ})
+function EKFPropagator(
+    M::AbstractManifold,
+    f;
+    B_M::AbstractBasis{ℝ}=DefaultOrthonormalBasis(),
+)
     jacobian_p_f_tilde =
         default_jacobian_p_discrete(M, M, f; jacobian_basis_arg=B_M, jacobian_basis_val=B_M)
     return EKFPropagator(jacobian_p_f_tilde)

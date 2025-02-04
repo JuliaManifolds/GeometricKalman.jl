@@ -19,17 +19,14 @@ using GeometricKalman: default_discretization, car_f, car_h, gen_car_data
     P0 = diagm([0.1, 0.1, 0.1])
     Q = diagm([0.5, 0.5, 2])
     R = diagm([0.001, 0.001])
-    car_f_adapted(p, q, noise, t::Real) = car_f(p, q, noise, t::Real; vt=vt)
+    car_f_adapted(p, q, noise, t::Real) = car_f(p, q, noise, t; vt=vt)
     f_tilde = default_discretization(M, car_f_adapted; dt=dt)
 
     sp = WanMerweSigmaPoints(; α=1.0)
     params = [
         (
             "EKF",
-            (;
-                propagator=EKFPropagator(M, f_tilde, DefaultOrthonormalBasis()),
-                updater=EKFUpdater(M, M_obs, car_h),
-            ),
+            (; propagator=EKFPropagator(M, f_tilde), updater=EKFUpdater(M, M_obs, car_h)),
         ),
         (
             "UKF",
@@ -41,7 +38,7 @@ using GeometricKalman: default_discretization, car_f, car_h, gen_car_data
         (
             "EKF adaptive α=0.99",
             (;
-                propagator=EKFPropagator(M, f_tilde, DefaultOrthonormalBasis()),
+                propagator=EKFPropagator(M, f_tilde),
                 updater=EKFUpdater(M, M_obs, car_h),
                 measurement_covariance_adapter=CovarianceMatchingMeasurementCovarianceAdapter(
                     0.99,

@@ -19,6 +19,7 @@ include("parameter_fitting.jl")
 
 include("processes/general.jl")
 include("processes/car_2d.jl")
+include("processes/rotating_earth.jl")
 
 export CovarianceMatchingMeasurementCovarianceAdapter,
     CovarianceMatchingProcessCovarianceAdapter,

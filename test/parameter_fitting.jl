@@ -34,16 +34,7 @@ using GeometricKalman: make_kalman_parameter_fitting_objective
     params = [
         (
             "EKF",
-            (;
-                propagator=EKFPropagator(M, f_tilde, DefaultOrthonormalBasis()),
-                updater=EKFUpdater(
-                    M,
-                    M_obs,
-                    car_h,
-                    DefaultOrthonormalBasis(),
-                    DefaultOrthonormalBasis(),
-                ),
-            ),
+            (; propagator=EKFPropagator(M, f_tilde), updater=EKFUpdater(M, M_obs, car_h)),
         ),
         (
             "UKF",
@@ -55,14 +46,8 @@ using GeometricKalman: make_kalman_parameter_fitting_objective
         (
             "EKF adaptive α=0.99",
             (;
-                propagator=EKFPropagator(M, f_tilde, DefaultOrthonormalBasis()),
-                updater=EKFUpdater(
-                    M,
-                    M_obs,
-                    car_h,
-                    DefaultOrthonormalBasis(),
-                    DefaultOrthonormalBasis(),
-                ),
+                propagator=EKFPropagator(M, f_tilde),
+                updater=EKFUpdater(M, M_obs, car_h),
                 measurement_covariance_adapter=CovarianceMatchingMeasurementCovarianceAdapter(
                     0.99,
                 ),
