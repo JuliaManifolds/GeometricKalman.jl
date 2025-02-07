@@ -3,6 +3,7 @@ module GeometricKalman
 using LinearAlgebra
 
 using ManifoldsBase, Manifolds
+using ManifoldsBase: exp_fused, exp_fused!
 using Manopt
 
 using StatsBase

@@ -240,8 +240,8 @@ function discrete_kalman_filter_manifold(
     vt::AbstractVectorTransportMethod=default_vector_transport_method(M),
     t0::Real=0.0,
     dt::Real=0.01,
-    propagator::AbstractKFPropagator=EKFPropagator(M, f_tilde, B_M),
-    updater::AbstractKFUpdater=EKFUpdater(M, M_obs, h, B_M, B_M_obs),
+    propagator::AbstractKFPropagator=EKFPropagator(M, f_tilde; B_M=B_M),
+    updater::AbstractKFUpdater=EKFUpdater(M, M_obs, h; B_M=B_M, B_M_obs=B_M_obs),
     jacobian_w_f_tilde=default_jacobian_w_discrete(M, f_tilde; jacobian_basis=B_M),
     jacobian_w_h=default_jacobian_w_discrete(M_obs, h; jacobian_basis=B_M_obs),
     obs_inv_retr::AbstractInverseRetractionMethod=default_inverse_retraction_method(M_obs),
@@ -374,7 +374,7 @@ function get_sigma_points!(
         Xc = view(sqrm, i, :)
         get_vector!(M, X, p_n, Xc, B)
         sigma_points[2 * i] = exp(M, p_n, X)
-        sigma_points[2 * i + 1] = exp(M, p_n, X, -1)
+        sigma_points[2 * i + 1] = exp_fused(M, p_n, X, -1)
     end
     return sigma_points
 end
@@ -492,7 +492,7 @@ end
 function EKFUpdater(
     M::AbstractManifold,
     M_obs::AbstractManifold,
-    h,
+    h;
     B_M::AbstractBasis{ℝ}=DefaultOrthonormalBasis(),
     B_M_obs::AbstractBasis{ℝ}=DefaultOrthonormalBasis(),
 )
