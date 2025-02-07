@@ -18,12 +18,8 @@ const RotEarthManifold = ProductManifold(
 
 # observation manifold for rotating Earth example
 # (gyroscope A reading) × (accelerometer A reading) × (gyroscope B reading) × (accelerometer B reading)
-const RotEarthObsManifold = ProductManifold(
-    Euclidean(3),
-    Euclidean(3),
-    Euclidean(3),
-    Euclidean(3),
-)
+const RotEarthObsManifold =
+    ProductManifold(Euclidean(3), Euclidean(3), Euclidean(3), Euclidean(3))
 
 struct EarthModel{TMSO3<:SpecialOrthogonal,Te_SO3,TΩx,Tg<:AbstractVector}
     SO3::TMSO3
@@ -78,8 +74,6 @@ function (em::EarthModel)(p, q, noise, t::Real)
         X_b_bias,
     )
 end
-
-
 
 function earth_h(p, q, noise, t::Real)
     # IMU A is attached to the main body; IMU B is on the joint 
