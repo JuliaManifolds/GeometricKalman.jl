@@ -1,9 +1,20 @@
 using GeometricKalman, Test, LinearAlgebra, Distributions
 using Manifolds
+using Rotations
 using RecursiveArrayTools
+using LinearAlgebra
 
 using GeometricKalman:
-    default_discretization, earth_f, earth_h, earth_control, RotEarthManifold, gen_data
+    default_discretization, EarthModel, earth_h, earth_control, RotEarthManifold, gen_data
+
+@testset "Basic methods" begin
+    @test GeometricKalman.joint_rotation_matrix([1.0, 0.0, 0.0]) ≈ I(3)
+    ry = 0.2
+    rz = 0.3
+    joint_pos = GeometricKalman.angles_to_joint_position(ry, rz)
+    @test joint_pos ≈ [0.955336489125606, 0.28962947762551555, 0.05871080169382652]
+    @test GeometricKalman.joint_rotation_matrix(joint_pos) ≈ Rotations.RotXYZ(0.0, ry, rz)
+end
 
 @testset "Basic filtering" begin
     M = RotEarthManifold
@@ -34,13 +45,13 @@ using GeometricKalman:
     R = diagm([0.001, 0.001])
     dt = 0.01
     N = 100
-    earth_f_adapted(p, q, noise, t::Real) = earth_f(p, q, noise, t)
-    f_tilde = default_discretization(M, earth_f_adapted; dt=dt)
+    em = EarthModel()
+    f_tilde = default_discretization(M, em; dt=dt)
 
     samples, controls, measurements = gen_data(
         M,
         p0,
-        earth_f,
+        em,
         earth_h,
         earth_control,
         noise_f_distr,

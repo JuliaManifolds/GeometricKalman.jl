@@ -14,6 +14,8 @@ using Distributions
 using RecursiveArrayTools
 using ForwardDiff
 
+using Rotations: Rotations
+
 include("jacobian_tools.jl")
 include("filters.jl")
 include("parameter_fitting.jl")

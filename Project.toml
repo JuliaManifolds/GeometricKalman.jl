@@ -11,6 +11,7 @@ Manifolds = "1cead3c2-87b3-11e9-0ccd-23c62b72b94e"
 ManifoldsBase = "3362f125-f0bb-47a3-aa74-596ffd7ef2fb"
 Manopt = "0fc0a36d-df90-57f3-8f93-d78a9fc72bb5"
 RecursiveArrayTools = "731186ca-8d62-57ce-b412-fbd966d074cd"
+Rotations = "6038ab10-8711-5258-84ad-4b1120ba62dc"
 StatsBase = "2913bbd2-ae8a-5f71-8c99-4fb6c76f3a91"
 
 [compat]
@@ -21,6 +22,7 @@ Manifolds = "0.10.8"
 ManifoldsBase = "1"
 Manopt = "0.5.4"
 RecursiveArrayTools = "3.27.4"
+Rotations = "1.7.1"
 StatsBase = "0.34.3"
 julia = "1.10"
 

@@ -28,13 +28,23 @@ struct EarthModel{TMSO3<:SpecialOrthogonal,Te_SO3,TΩx,Tg<:AbstractVector}
     g::Tg
 end
 
+function joint_rotation_matrix(joint::AbstractVector)
+    jy = atan(joint[3], joint[2])
+    jz = acos(joint[1])
+    return Rotations.RotXYZ(0.0, jy, jz)
+end
+
+function angles_to_joint_position(ry, rz)
+    return [cos(rz), sin(rz) * cos(ry), sin(rz) * sin(ry)]
+end
+
 function EarthModel()
     SO3 = SpecialOrthogonal(3)
     e_SO3 = identity_element(SO3)
 
     latitude = 50.0
-    Ω = 7.292e-5 * [cosd(latitude), 0, -sin(latitude)]
-    Ωx = hat(em.SO3, em.e_SO3, Ω)
+    Ω = 7.292e-5 * [cosd(latitude), 0, -sind(latitude)]
+    Ωx = hat(SO3, e_SO3, Ω)
     g = [0, 0, -9.81]
 
     return EarthModel(SpecialOrthogonal(3), e_SO3, Ωx, g)
@@ -77,10 +87,30 @@ end
 
 function earth_h(p, q, noise, t::Real)
     # IMU A is attached to the main body; IMU B is on the joint 
-    return p.x[1] + noise
+
+    # unpack state
+    pos, R = p.x[1].x
+    joint = p.x[2]
+    vel = p.x[3]
+    ω = p.x[4]
+    acc = p.x[5]
+    b_gyro_a = p.x[6]
+    b_gyro_b = p.x[7]
+    b_acc_a = p.x[8]
+    b_acc_b = p.x[9]
+
+    gyro_a_reading = ω + b_gyro_a + noise[1:3]
+    acc_a_reading = acc + b_acc_a + noise[4:6]
+
+    joint_R = joint_rotation_matrix(joint)
+    gyro_b_reading = joint_R * ω + b_gyro_b + noise[7:9]
+    acc_b_reading = joint_R * acc + b_acc_b + noise[10:12]
+
+    return ArrayPartition(gyro_a_reading, acc_a_reading, gyro_b_reading, acc_b_reading)
 end
 
 # the model from Section VI.A of http://arxiv.org/abs/2007.14097
+# "Associating Uncertainty to Extended Poses for on Lie Group IMU Preintegration with Rotating Earth"
 # with added joint of Sphere(2) degrees of freedom
 # see RotEarthManifold for state
 function gen_rotating_earth_data(;
