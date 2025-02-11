@@ -248,8 +248,9 @@ function discrete_kalman_filter_manifold(
     measurement_covariance_adapter::AbstractMeasurementCovarianceAdapter=ConstantMeasurementCovarianceAdapter(),
     process_covariance_adapter::AbstractProcessCovarianceAdapter=ConstantProcessCovarianceAdapter(),
     control_prototype=nothing,
+    process_noise_dimensionality::Int=size(P0, 1),
 )
-    zero_noise = zeros(size(P0, 1))
+    zero_noise = zeros(process_noise_dimensionality)
     zero_noise_obs = zeros(size(R, 1))
     instantiated_propagator = instantiate_propagator(M, propagator, p0)
     instantiated_updater =
@@ -507,7 +508,7 @@ function EKFUpdater(
 end
 
 function move_covariance!(kalman::KalmanState, p_n_new, P_n)
-    P_n_e = eigen(P_n)
+    P_n_e = eigen(Symmetric(P_n))
     Manopt.eigenvector_transport!(
         kalman.M,
         P_n_e,

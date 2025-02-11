@@ -5,7 +5,20 @@ using RecursiveArrayTools
 using LinearAlgebra
 
 using GeometricKalman:
-    default_discretization, EarthModel, earth_h, earth_control, RotEarthManifold, gen_data
+    default_discretization,
+    EarthModel,
+    earth_h,
+    earth_control,
+    RotEarthManifold,
+    gen_data,
+    RotEarthRetraction,
+    RotEarthProcessNoiseDimensionality
+
+function joint_rotation_matrix_ref(joint::AbstractVector)
+    jy = atan(joint[3], joint[2])
+    jz = acos(joint[1])
+    return Rotations.RotXYZ(0.0, jy, jz)
+end
 
 @testset "Basic methods" begin
     @test GeometricKalman.joint_rotation_matrix([1.0, 0.0, 0.0]) ≈ I(3)
@@ -18,6 +31,10 @@ end
 
 @testset "Basic filtering" begin
     M = RotEarthManifold
+    M_obs = GeometricKalman.RotEarthObsManifold
+
+    M_dim = manifold_dimension(M)
+    M_obs_dim = manifold_dimension(M_obs)
 
     # (position and orientation) × (joint orientation) × (velocity) × (angular velocity) × (acceleration) × (gyroscope bias A) × (gyroscope bias B) × (accelerometer bias A) × (accelerometer bias B)
     pos_orient_0 = ArrayPartition([0.0, 0.0, 0.0], [1.0 0.0 0.0; 0.0 1.0 0.0; 0.0 0.0 1.0])
@@ -36,17 +53,22 @@ end
         [0.0, 0.0, 0.0],
         [0.0, 0.0, 0.0],
     )
-    M_dim = manifold_dimension(M)
+
     P0 = zeros(M_dim, M_dim)
     view(P0, diagind(P0)) .= 1e-5
     view(P0, 1:3, 1:3) .= diagm([0.1, 0.1, 0.1])
 
-    Q = sqrt.(P0)
-    R = diagm([0.001, 0.001])
+    Q = zeros(RotEarthProcessNoiseDimensionality, RotEarthProcessNoiseDimensionality)
+    view(Q, diagind(Q)) .= 0.1
+
+    R = diagm(fill(0.001, M_obs_dim))
     dt = 0.01
     N = 100
     em = EarthModel()
     f_tilde = default_discretization(M, em; dt=dt)
+
+    noise_f_distr = MvNormal(zeros(RotEarthProcessNoiseDimensionality), Q)
+    noise_h_distr = MvNormal(zeros(M_obs_dim), R)
 
     samples, controls, measurements = gen_data(
         M,
@@ -58,6 +80,7 @@ end
         noise_h_distr;
         N=N,
         dt=dt,
+        retraction=RotEarthRetraction,
     )
 
     sp = WanMerweSigmaPoints(; α=1.0)
@@ -96,6 +119,7 @@ end
             P0,
             copy(Q),
             copy(R);
+            process_noise_dimensionality=RotEarthProcessNoiseDimensionality,
             filter_kwargs...,
         )
 

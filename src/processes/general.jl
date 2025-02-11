@@ -10,6 +10,15 @@ struct InvariantExponentialRetraction <: AbstractRetractionMethod end
 function ManifoldsBase.retract(M::AbstractManifold, p, X, ::InvariantExponentialRetraction)
     return exp_inv(M, p, X)
 end
+function ManifoldsBase.retract!(
+    M::AbstractManifold,
+    q,
+    p,
+    X,
+    ::InvariantExponentialRetraction,
+)
+    return exp_inv!(M, q, p, X)
+end
 
 function ManifoldsBase.retract(
     M::AbstractDecoratorManifold,
@@ -21,6 +30,24 @@ function ManifoldsBase.retract(
         retract,
         Tuple{AbstractManifold,Any,Any,InvariantExponentialRetraction},
         M,
+        p,
+        X,
+        ierm,
+    )
+end
+
+function ManifoldsBase.retract!(
+    M::AbstractDecoratorManifold,
+    q,
+    p,
+    X,
+    ierm::InvariantExponentialRetraction,
+)
+    return invoke(
+        retract!,
+        Tuple{AbstractManifold,Any,Any,Any,InvariantExponentialRetraction},
+        M,
+        q,
         p,
         X,
         ierm,
