@@ -9,7 +9,7 @@ using GeometricKalman: make_kalman_parameter_fitting_objective
 @testset "Parameter fitting" begin
     dt = 0.01
     vt = 5
-    samples, controls, measurements = gen_car_data(;
+    times, samples, controls, measurements = gen_car_data(;
         vt=vt,
         N=200,
         noise_f_distr=MvNormal([0.0, 0.0, 0.0], 1e3 * diagm([0.001, 1e-10, 1.0])),

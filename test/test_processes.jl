@@ -13,7 +13,7 @@ using GeometricKalman: car_f, car_h, car_control, gen_data
     noise_h_distr = MvNormal([0.0, 0.0], diagm([0.001, 0.001]))
     vt = 0.2
 
-    samples, controls, measurements = gen_data(
+    times, samples, controls, measurements = gen_data(
         M,
         p0,
         car_f,

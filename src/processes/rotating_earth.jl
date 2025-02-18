@@ -1,5 +1,20 @@
 
-earth_control(t::Real) = nothing
+earth_control_zero(t::Real) = zeros(15)
+
+Base.@kwdef struct EarthControlMovement
+    X_vel_amplitude::Float64 = 1.0
+    X_b_gyro_amplitude::Float64 = 0.001
+    X_b_acc_amplitude::Float64 = 0.001
+end
+
+function (ecm::EarthControlMovement)(t::Real)
+    X_joint = [0.0, 0.0, 0.0]
+    X_ω = [0.0, 0.0, 0.0]
+    X_vel = ecm.X_vel_amplitude * [sin(t), cos(t), 0.0]
+    X_b_gyro = [ecm.X_b_gyro_amplitude * sin(t), 0.0, 0.0]
+    X_b_bias = [0.0, ecm.X_b_acc_amplitude * cos(t), 0.0]
+    return hcat(X_joint, X_ω, X_vel, X_b_gyro, X_b_bias)
+end
 
 const RotEarthRetraction = ProductRetraction(
     InvariantExponentialRetraction(),
@@ -23,10 +38,34 @@ const RotEarthManifold = ProductManifold(
     Euclidean(3),
 )
 
+function show_state(::typeof(RotEarthManifold), p)
+    # unpack state
+    pos, R = p.x[1].x
+    joint = p.x[2]
+    vel = p.x[3]
+    ω = p.x[4]
+    acc = p.x[5]
+    b_gyro_a = p.x[6]
+    b_gyro_b = p.x[7]
+    b_acc_a = p.x[8]
+    b_acc_b = p.x[9]
+
+    println("Position           : $pos")
+    println("Rotation           : $R")
+    println("Joint orientation  : $joint")
+    println("Velocity:          : $vel")
+    println("Rotational velocity: $ω")
+    println("Acceleration       : $acc")
+    println("Bias of gyro A     : $b_gyro_a")
+    println("Bias of gyro B     : $b_gyro_b")
+    println("Bias of acc A      : $b_acc_a")
+    return println("Bias of acc B      : $b_acc_b")
+end
+
 # observation manifold for rotating Earth example
-# (gyroscope A reading) × (accelerometer A reading) × (gyroscope B reading) × (accelerometer B reading)
+# (gyroscope A reading) × (accelerometer A reading) × (gyroscope B reading) × (accelerometer B reading) × (GPS position)
 const RotEarthObsManifold =
-    ProductManifold(Euclidean(3), Euclidean(3), Euclidean(3), Euclidean(3))
+    ProductManifold(Euclidean(3), Euclidean(3), Euclidean(3), Euclidean(3), Euclidean(3))
 
 struct EarthModel{TMSO3<:SpecialOrthogonal,Te_SO3,TΩx,Tg<:AbstractVector}
     SO3::TMSO3
@@ -93,12 +132,12 @@ function (em::EarthModel)(p, q, noise, t::Real)
     # compute tangents
     X_pos = vel + noise[1:3]
     X_R = -em.Ωx * R + R * hat(em.SO3, em.e_SO3, ω + noise[4:6])
-    X_joint = [0.0, 0.0, 0.0]
-    X_vel = R * acc + em.g - 2 * em.Ωx * vel - em.Ωx^2 * pos
-    X_ω = [0.0, 0.0, 0.0]
+    X_joint = q[1:3]
+    X_vel = R * acc + em.g - 2 * em.Ωx * vel - em.Ωx^2 * pos + q[4:6]
+    X_ω = q[7:9]
     X_acc = [0.0, 0.0, 0.0]
-    X_b_gyro = [0.0, 0.0, 0.0]
-    X_b_bias = [0.0, 0.0, 0.0]
+    X_b_gyro = q[10:12]
+    X_b_bias = q[13:15]
 
     return ArrayPartition(
         ArrayPartition(X_pos, X_R),
@@ -134,7 +173,15 @@ function earth_h(p, q, noise, t::Real)
     gyro_b_reading = joint_R * ω + b_gyro_b + noise[7:9]
     acc_b_reading = joint_R * acc + b_acc_b + noise[10:12]
 
-    return ArrayPartition(gyro_a_reading, acc_a_reading, gyro_b_reading, acc_b_reading)
+    gps_reading = pos + noise[13:15]
+
+    return ArrayPartition(
+        gyro_a_reading,
+        acc_a_reading,
+        gyro_b_reading,
+        acc_b_reading,
+        gps_reading,
+    )
 end
 
 # the model from Section VI.A of http://arxiv.org/abs/2007.14097

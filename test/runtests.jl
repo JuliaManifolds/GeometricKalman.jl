@@ -9,3 +9,5 @@ include("basic_filtering.jl")
 
 include("llpf_comparison.jl")
 include("parameter_fitting.jl")
+
+include("test_rotating_earth.jl")

@@ -68,6 +68,7 @@ function gen_data(
     retraction::AbstractRetractionMethod=InvariantExponentialRetraction(),
 )
     samples = [p0]
+    times = collect(range(0.0; step=dt, length=N + 1))
     controls = []
     measurements = [fun_h(p0, fun_control(0.0), rand(noise_h_distr), 0.0)]
     p_i = p0
@@ -84,5 +85,5 @@ function gen_data(
         push!(measurements, fun_h(p_i, ut, noise_h, t))
     end
     push!(controls, fun_control(N * dt))
-    return samples, controls, measurements
+    return times, samples, controls, measurements
 end
