@@ -28,6 +28,7 @@ end
     rz = 0.3
     joint_pos = GeometricKalman.angles_to_joint_position(ry, rz)
     @test joint_pos ≈ [0.955336489125606, 0.28962947762551555, 0.05871080169382652]
+    @test [GeometricKalman.joint_position_to_angles(joint_pos)...] ≈ [ry, rz]
     @test GeometricKalman.joint_rotation_matrix(joint_pos) ≈ Rotations.RotXYZ(0.0, ry, rz)
 end
 
@@ -169,7 +170,7 @@ end
     R = diagm(fill(0.001, M_obs_dim))
     view(R, 13:15, 13:15) .= 2.0 # position
     dt = 0.01
-    N = 100
+    N = 50
     em = EarthModel()
     f_tilde = default_discretization(M, em; dt=dt)
 

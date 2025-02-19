@@ -105,6 +105,16 @@ function angles_to_joint_position(ry, rz)
     return [cos(rz), sin(rz) * cos(ry), sin(rz) * sin(ry)]
 end
 
+function joint_position_to_angles(p)
+    srz = sqrt(1 - p[1]^2)
+    if isapprox(srz, 0)
+        a2 = 0.0
+    else
+        a2 = atan(p[3] / srz, p[2] / srz)
+    end
+    return (a2, acos(p[1]))
+end
+
 function EarthModel()
     SO3 = SpecialOrthogonal(3)
     e_SO3 = identity_element(SO3)
