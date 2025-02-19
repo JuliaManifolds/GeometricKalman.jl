@@ -1,8 +1,14 @@
 
-earth_control_zero(t::Real) = zeros(15)
+earth_control_zero(t::Real) = zeros(18)
+
+function earth_control_stationary(t::Real)
+    q = zeros(18)
+    q[9] = 9.81 # counteracts gravity
+    return q
+end
 
 Base.@kwdef struct EarthControlMovement
-    X_vel_amplitude::Float64 = 1.0
+    X_pos_amplitude::Float64 = 1.0
     X_b_gyro_amplitude::Float64 = 0.001
     X_b_acc_amplitude::Float64 = 0.001
 end
@@ -10,10 +16,11 @@ end
 function (ecm::EarthControlMovement)(t::Real)
     X_joint = [0.0, 0.0, 0.0]
     X_ω = [0.0, 0.0, 0.0]
-    X_vel = ecm.X_vel_amplitude * [sin(t), cos(t), 0.0]
+    X_pos = ecm.X_pos_amplitude * [sin(t), cos(t), 0.0]
+    X_vel = [0.0, 0.0, 9.81]
     X_b_gyro = [ecm.X_b_gyro_amplitude * sin(t), 0.0, 0.0]
     X_b_bias = [0.0, ecm.X_b_acc_amplitude * cos(t), 0.0]
-    return hcat(X_joint, X_ω, X_vel, X_b_gyro, X_b_bias)
+    return vcat(X_joint, X_pos, X_vel, X_ω, X_b_gyro, X_b_bias)
 end
 
 const RotEarthRetraction = ProductRetraction(
@@ -140,16 +147,16 @@ function (em::EarthModel)(p, q, noise, t::Real)
     b_acc_b = p.x[9]
 
     # compute tangents
-    X_pos = vel + noise[1:3]
+    X_pos = vel + noise[1:3] + q[4:6]
     X_R = -em.Ωx * R + R * hat(em.SO3, em.e_SO3, ω + noise[4:6])
     X_joint = q[1:3]
-    X_vel = R * acc + em.g - 2 * em.Ωx * vel - em.Ωx^2 * pos + q[4:6]
-    X_ω = q[7:9]
+    X_vel = R * acc + em.g - 2 * em.Ωx * vel - em.Ωx^2 * pos + q[7:9]
+    X_ω = q[10:12]
     X_acc = [0.0, 0.0, 0.0]
-    X_b_gyro = q[10:12]
-    X_b_bias = q[13:15]
+    X_b_gyro = q[13:15]
+    X_b_bias = q[16:18]
 
-    return ArrayPartition(
+    total_X = ArrayPartition(
         ArrayPartition(X_pos, X_R),
         X_joint,
         X_vel,
@@ -160,6 +167,7 @@ function (em::EarthModel)(p, q, noise, t::Real)
         X_b_bias,
         X_b_bias,
     )
+    return total_X
 end
 
 function earth_h(p, q, noise, t::Real)
