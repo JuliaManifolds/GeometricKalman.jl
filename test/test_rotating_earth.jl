@@ -177,7 +177,7 @@ end
     noise_f_distr = MvNormal(zeros(RotEarthProcessNoiseDimensionality), Q)
     noise_h_distr = MvNormal(zeros(M_obs_dim), R)
 
-    movement_control = EarthControlMovement(; X_vel_amplitude=10.0)
+    movement_control = EarthControlMovement(; X_pos_amplitude=10.0)
 
     times, samples, controls, measurements = gen_data(
         M,
