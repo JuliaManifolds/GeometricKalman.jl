@@ -9,18 +9,24 @@ end
 
 Base.@kwdef struct EarthControlMovement
     X_pos_amplitude::Float64 = 1.0
+    X_pos_angular_frequency::Float64 = 0.1
     X_b_gyro_amplitude::Float64 = 0.001
+    X_b_gyro_angular_frequency::Float64 = 0.001
     X_b_acc_amplitude::Float64 = 0.001
+    X_b_acc_angular_frequency::Float64 = 0.001
 end
 
 function (ecm::EarthControlMovement)(t::Real)
     X_joint = [0.0, 0.0, 0.0]
-    X_ω = [0.0, 0.0, 0.0]
-    X_pos = ecm.X_pos_amplitude * [sin(t), cos(t), 0.0]
+    X_ω = [ecm.X_pos_angular_frequency * sin(ecm.X_pos_angular_frequency * t), 0.0, 0.0]
+    X_pos =
+        ecm.X_pos_amplitude *
+        [cos(ecm.X_pos_angular_frequency * t), sin(ecm.X_pos_angular_frequency * t), 0.0]
+    # X_vel is 0 in axes X and Y because position changes are already handled by X_pos
     X_vel = [0.0, 0.0, 9.81]
-    X_b_gyro = [ecm.X_b_gyro_amplitude * sin(t), 0.0, 0.0]
-    X_b_bias = [0.0, ecm.X_b_acc_amplitude * cos(t), 0.0]
-    return vcat(X_joint, X_pos, X_vel, X_ω, X_b_gyro, X_b_bias)
+    X_b_gyro = [ecm.X_b_gyro_amplitude * sin(ecm.X_b_gyro_angular_frequency * t), 0.0, 0.0]
+    X_b_acc = [0.0, ecm.X_b_acc_amplitude * cos(ecm.X_b_acc_angular_frequency * t), 0.0]
+    return vcat(X_joint, X_pos, X_vel, X_ω, X_b_gyro, X_b_acc)
 end
 
 const RotEarthRetraction = ProductRetraction(
@@ -154,7 +160,7 @@ function (em::EarthModel)(p, q, noise, t::Real)
     X_ω = q[10:12]
     X_acc = [0.0, 0.0, 0.0]
     X_b_gyro = q[13:15]
-    X_b_bias = q[16:18]
+    X_b_acc = q[16:18]
 
     total_X = ArrayPartition(
         ArrayPartition(X_pos, X_R),
@@ -164,8 +170,8 @@ function (em::EarthModel)(p, q, noise, t::Real)
         X_acc,
         X_b_gyro,
         X_b_gyro,
-        X_b_bias,
-        X_b_bias,
+        X_b_acc,
+        X_b_acc,
     )
     return total_X
 end
