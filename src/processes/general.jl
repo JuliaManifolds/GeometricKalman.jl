@@ -65,7 +65,7 @@ function gen_data(
     N::Int=100,
     dt::Real=0.01,
     f_kwargs=(;),
-    retraction::AbstractRetractionMethod=InvariantExponentialRetraction(),
+    retraction::AbstractRetractionMethod=ExponentialRetraction(),
 )
     samples = [p0]
     times = collect(range(0.0; step=dt, length=N + 1))

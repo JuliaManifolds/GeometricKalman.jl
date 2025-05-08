@@ -40,7 +40,7 @@ const RotEarthProcessNoiseDimensionality = 6
 # state: SE(3) × S(2) × T(3) × T(3) × T(3) × T(3) × T(3) × T(3)
 # (position and orientation) × (joint orientation) × (velocity) × (angular velocity) × (acceleration) × (gyroscope bias A) × (gyroscope bias B) × (accelerometer bias A) × (accelerometer bias B)
 const RotEarthManifold = ProductManifold(
-    SpecialEuclidean(3),
+    SpecialEuclideanGroup(3),
     Sphere(2),
     Euclidean(3),
     Euclidean(3),
@@ -80,7 +80,7 @@ end
 const RotEarthObsManifold =
     ProductManifold(Euclidean(3), Euclidean(3), Euclidean(3), Euclidean(3), Euclidean(3))
 
-struct EarthModel{TMSO3<:SpecialOrthogonal,Te_SO3,TΩx,Tg<:AbstractVector}
+struct EarthModel{TMSO3<:SpecialOrthogonalGroup,Te_SO3,TΩx,Tg<:AbstractVector}
     SO3::TMSO3
     e_SO3::Te_SO3
     Ωx::TΩx
@@ -129,7 +129,7 @@ function joint_position_to_angles(p)
 end
 
 function EarthModel()
-    SO3 = SpecialOrthogonal(3)
+    SO3 = SpecialOrthogonalGroup(3)
     e_SO3 = identity_element(SO3)
 
     latitude = 50.0
@@ -137,7 +137,7 @@ function EarthModel()
     Ωx = hat(SO3, e_SO3, Ω)
     g = [0, 0, -9.81]
 
-    return EarthModel(SpecialOrthogonal(3), e_SO3, Ωx, g)
+    return EarthModel(SO3, e_SO3, Ωx, g)
 end
 
 function (em::EarthModel)(p, q, noise, t::Real)
@@ -217,7 +217,7 @@ function gen_rotating_earth_data(;
     dt::Real=0.01,
     M::AbstractManifold=RotEarthManifold,
     p0=ArrayPartition(
-        identity_element(SpecialEuclidean(3)),
+        identity_element(SpecialEuclideanGroup(3)),
         [0.1, 0.0, 0.0],
         [0.1, 0.0, 0.0],
         [0.0, 0.0, 0.0],

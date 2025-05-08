@@ -1,14 +1,14 @@
 using GeometricKalman, Test, LinearAlgebra, Distributions
-using Manifolds
+using LieGroups
 using RecursiveArrayTools
 
 using GeometricKalman: car_f, car_h, car_control, gen_data
 
 @testset "Planar car" begin
-    M = SpecialEuclidean(2)
+    M = SpecialEuclideanGroup(2)
     N = 200
     dt = 0.01
-    p0 = identity_element(M)
+    p0 = identity_element(M, ArrayPartition)
     noise_f_distr = MvNormal([0.0, 0.0, 0.0], 1e3 * diagm([0.001, 1e-10, 1.0]))
     noise_h_distr = MvNormal([0.0, 0.0], diagm([0.001, 0.001]))
     vt = 0.2

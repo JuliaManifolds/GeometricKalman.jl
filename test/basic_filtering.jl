@@ -4,18 +4,20 @@ using RecursiveArrayTools
 
 using GeometricKalman: default_discretization, car_f, car_h, gen_car_data
 
+using LieGroups
+
 @testset "Basic filtering" begin
     dt = 0.01
     vt = 5
     times, samples, controls, measurements = gen_car_data(;
         vt=vt,
         N=200,
-        noise_f_distr=MvNormal([0.0, 0.0, 0.0], 1e3 * diagm([0.001, 1e-10, 1.0])),
+        noise_f_distr=MvNormal([0.0, 0.0, 0.0], 1e3 * diagm([1e-10, 1.0, 0.001])),
         noise_h_distr=MvNormal([0.0, 0.0], diagm([0.001, 0.001])),
     )
-    M = SpecialEuclidean(2)
+    M = SpecialEuclideanGroup(2)
     M_obs = Euclidean(2)
-    p0 = ArrayPartition([0.0, 0.0], [1.0 0.0; 0.0 1.0])
+    p0 = ArrayPartition([1.0 0.0; 0.0 1.0], [0.0, 0.0])
     P0 = diagm([0.1, 0.1, 0.1])
     Q = diagm([0.5, 0.5, 2])
     R = diagm([0.001, 0.001])

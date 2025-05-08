@@ -2,9 +2,11 @@ module GeometricKalman
 
 using LinearAlgebra
 
-using ManifoldsBase, Manifolds
-using ManifoldsBase: exp_fused, exp_fused!
+using ManifoldsBase
+using ManifoldsBase: exp_fused, exp_fused!, AbstractBasis
 using Manopt
+
+using Manifolds: Euclidean, Manifolds, Sphere
 
 using StatsBase
 import StatsBase: predict!
@@ -13,6 +15,8 @@ using Distributions
 
 using RecursiveArrayTools
 using ForwardDiff
+
+using LieGroups
 
 using Rotations: Rotations
 

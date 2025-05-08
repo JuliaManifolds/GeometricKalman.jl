@@ -308,6 +308,8 @@ function predict!(kalman::KalmanState, prop::EKFPropagator, control)
     L_n = kalman.jacobian_w_f_tilde(kalman.p_n, control, kalman.zero_noise, kalman.t)
     # covariance propagation
     P_n_nm1 = F_n * kalman.P_n * F_n' + L_n * kalman.Q * L_n'
+    println("F_n = ", F_n)
+    println("L_n = ", L_n)
     kalman.p_n = p_n_nm1
     kalman.P_n = P_n_nm1
 
@@ -566,9 +568,13 @@ function update_from_kalman_gain!(
         adapt_covariance!(kalman.Q, kalman.process_covariance_adapter, Kyc, L_n)
     end
 
+    println("K_n = ", K_n)
+    println("S_n = ", S_n)
     kalman.P_n -= K_n * S_n * K_n'
+    println("kalman.P_n = ", kalman.P_n)
     # move covariance to the new point and update Kalman filter state
     move_covariance!(kalman, p_n_new, kalman.P_n)
+    println("kalman.P_n = ", kalman.P_n)
     kalman.p_n = p_n_new
     return kalman
 end
@@ -579,8 +585,14 @@ function update!(kalman::KalmanState, upd::EKFUpdater, control, measurement)
     # compute Kalman gain
     H_n = upd.jacobian_p_h(kalman.p_n, control, kalman.zero_noise_obs, kalman.t)
     W_n = kalman.jacobian_w_h(kalman.p_n, control, kalman.zero_noise_obs, kalman.t)
+    println(H_n, W_n)
+    println("> kalman.P_n = ", kalman.P_n)
     HPHT = H_n * kalman.P_n * H_n'
     S_n = HPHT + W_n * kalman.R * W_n'
+    println("S_n = ", S_n)
+    println("HPHT = ", HPHT)
+    println("kalman.R = ", kalman.R)
+    println("kalman.P_n = ", kalman.P_n)
     K_n = kalman.P_n * H_n' / S_n
     update_from_kalman_gain!(kalman, y_expected, control, measurement, K_n, S_n, W_n, HPHT)
     return kalman
