@@ -1,8 +1,8 @@
 
-earth_control_zero(t::Real) = zeros(18)
+earth_control_zero(t::Real) = zeros(21)
 
 function earth_control_stationary(t::Real)
-    q = zeros(18)
+    q = zeros(21)
     q[9] = 9.81 # counteracts gravity
     return q
 end
@@ -17,16 +17,18 @@ Base.@kwdef struct EarthControlMovement
 end
 
 function (ecm::EarthControlMovement)(t::Real)
-    X_joint = [0.0, 0.0, 0.0]
-    X_ω = [ecm.X_pos_angular_frequency * sin(ecm.X_pos_angular_frequency * t), 0.0, 0.0]
-    X_pos =
-        ecm.X_pos_amplitude *
-        [cos(ecm.X_pos_angular_frequency * t), sin(ecm.X_pos_angular_frequency * t), 0.0]
-    # X_vel is 0 in axes X and Y because position changes are already handled by X_pos
+    X_joint = 0.01 * [sin(0.01 * t), cos(0.01 * t), 0.0]
+    X_ω = [0.0, 0.0, 0.0]#[ecm.X_pos_angular_frequency * sin(ecm.X_pos_angular_frequency * t), 0.0, 0.0]
+    X_pos =[0.0, 0.0, 0.0]
+    # X_vel is 0 in axes X and Y because position changes are already handled elsewhere
     X_vel = [0.0, 0.0, 9.81]
+    X_acc = ecm.X_pos_amplitude *
+        [cos(ecm.X_pos_angular_frequency * t), sin(ecm.X_pos_angular_frequency * t), 0.0]
+
+    println(X_acc)
     X_b_gyro = [ecm.X_b_gyro_amplitude * sin(ecm.X_b_gyro_angular_frequency * t), 0.0, 0.0]
     X_b_acc = [0.0, ecm.X_b_acc_amplitude * cos(ecm.X_b_acc_angular_frequency * t), 0.0]
-    return vcat(X_joint, X_pos, X_vel, X_ω, X_b_gyro, X_b_acc)
+    return vcat(X_joint, X_pos, X_vel, X_acc, X_ω, X_b_gyro, X_b_acc)
 end
 
 const RotEarthRetraction = ProductRetraction(
@@ -72,7 +74,8 @@ function show_state(::typeof(RotEarthManifold), p)
     println("Bias of gyro A     : $b_gyro_a")
     println("Bias of gyro B     : $b_gyro_b")
     println("Bias of acc A      : $b_acc_a")
-    return println("Bias of acc B      : $b_acc_b")
+    println("Bias of acc B      : $b_acc_b")
+    return nothing
 end
 
 # observation manifold for rotating Earth example
@@ -153,14 +156,15 @@ function (em::EarthModel)(p, q, noise, t::Real)
     b_acc_b = p.x[9]
 
     # compute tangents
+
     X_pos = vel + noise[1:3] + q[4:6]
     X_R = -em.Ωx * R + R * hat(em.SO3, em.e_SO3, ω + noise[4:6])
-    X_joint = q[1:3]
+    X_joint = get_vector(Sphere(2), joint, q[1:2])
     X_vel = R * acc + em.g - 2 * em.Ωx * vel - em.Ωx^2 * pos + q[7:9]
-    X_ω = q[10:12]
-    X_acc = [0.0, 0.0, 0.0]
-    X_b_gyro = q[13:15]
-    X_b_acc = q[16:18]
+    X_acc = q[10:12]
+    X_ω = q[13:15]
+    X_b_gyro = q[16:18]
+    X_b_acc = q[19:21]
 
     total_X = ArrayPartition(
         ArrayPartition(X_pos, X_R),

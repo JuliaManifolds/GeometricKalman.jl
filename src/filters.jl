@@ -369,7 +369,8 @@ function get_sigma_points!(
     L = manifold_dimension(M)
     λ = sp.α^2 * (L + sp.κ) - L
     #sqrm = sqrt((L + λ) * P_n)
-    sqrm = cholesky(Symmetric((L + λ) * P_n)).L
+    regularization_parameter = 10 * eps(eltype(P_n))
+    sqrm = cholesky(Symmetric((L + λ) * P_n) + regularization_parameter * I).L
     X = zero_vector(M, p_n)
     for i in 1:L
         Xc = view(sqrm, i, :)
@@ -475,6 +476,9 @@ function predict!(kalman::KalmanState, propagator::UnscentedPropagatorCache, con
     fill!(P_n, 0)
     for i in 1:length(sigma_points)
         xi = view(propagator.Xcsr, :, i)
+        if any(isnan, xi)
+            error("NaN encountered: ", xi)
+        end
         P_n .+= cov_weights[i] .* xi * xi'
     end
     P_n += L_n * kalman.Q * L_n'
@@ -517,7 +521,8 @@ function move_covariance!(kalman::KalmanState, p_n_new, P_n)
         kalman.B_state,
         kalman.vt,
     )
-    return kalman.P_n = Matrix(P_n_e)
+    kalman.P_n .= P_n_e.vectors * Diagonal(P_n_e.values) * P_n_e.vectors'
+    return nothing
 end
 function move_covariance!(
     kalman::KalmanState,
