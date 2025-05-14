@@ -1,7 +1,12 @@
 
-function default_discretization(M::AbstractManifold, f; dt::Real=0.01)
+function default_discretization(
+    M::AbstractManifold,
+    f;
+    dt::Real=0.01,
+    retraction::AbstractRetractionMethod=ExponentialRetraction(),
+)
     return function tilde_f(p, q, w, t::Real)
-        return ManifoldsBase.exp_fused(M, p, f(p, q, w, t), dt)
+        return ManifoldsBase.retract_fused(M, p, f(p, q, w, t), dt, retraction)
     end
 end
 

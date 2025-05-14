@@ -19,10 +19,11 @@ end
 function (ecm::EarthControlMovement)(t::Real)
     X_joint = 0.01 * [sin(0.01 * t), cos(0.01 * t), 0.0]
     X_ω = [0.0, 0.0, 0.0]#[ecm.X_pos_angular_frequency * sin(ecm.X_pos_angular_frequency * t), 0.0, 0.0]
-    X_pos =[0.0, 0.0, 0.0]
+    X_pos = [0.0, 0.0, 0.0]
     # X_vel is 0 in axes X and Y because position changes are already handled elsewhere
     X_vel = [0.0, 0.0, 9.81]
-    X_acc = ecm.X_pos_amplitude *
+    X_acc =
+        ecm.X_pos_amplitude *
         [cos(ecm.X_pos_angular_frequency * t), sin(ecm.X_pos_angular_frequency * t), 0.0]
 
     println(X_acc)

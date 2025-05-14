@@ -169,6 +169,7 @@ mutable struct KalmanState{
     TProp<:AbstractKFPropagator,
     TUpd<:AbstractKFUpdater,
     TOIR<:AbstractInverseRetractionMethod,
+    TSR<:AbstractRetractionMethod,
     TMCA<:AbstractMeasurementCovarianceAdapter,
     TPCA<:AbstractProcessCovarianceAdapter,
     TCov_P<:AbstractMatrix{<:Real},
@@ -193,6 +194,7 @@ mutable struct KalmanState{
     t::Float64
     dt::Float64
     obs_inv_retr::TOIR
+    state_retr::TSR
     measurement_covariance_adapter::TMCA
     process_covariance_adapter::TPCA
     P_n::TCov_P
@@ -245,6 +247,7 @@ function discrete_kalman_filter_manifold(
     jacobian_w_f_tilde=default_jacobian_w_discrete(M, f_tilde; jacobian_basis=B_M),
     jacobian_w_h=default_jacobian_w_discrete(M_obs, h; jacobian_basis=B_M_obs),
     obs_inv_retr::AbstractInverseRetractionMethod=default_inverse_retraction_method(M_obs),
+    state_retr::AbstractRetractionMethod=default_retraction_method(M),
     measurement_covariance_adapter::AbstractMeasurementCovarianceAdapter=ConstantMeasurementCovarianceAdapter(),
     process_covariance_adapter::AbstractProcessCovarianceAdapter=ConstantProcessCovarianceAdapter(),
     control_prototype=nothing,
@@ -267,6 +270,7 @@ function discrete_kalman_filter_manifold(
         t0,
         dt,
         obs_inv_retr,
+        state_retr,
         measurement_covariance_adapter,
         process_covariance_adapter,
         P0,
@@ -361,6 +365,7 @@ function get_sigma_points!(
     p_n,
     P_n,
     B::AbstractBasis,
+    retraction_method::AbstractRetractionMethod,
 )
 
     # prepare sigma points and weights
@@ -375,8 +380,8 @@ function get_sigma_points!(
     for i in 1:L
         Xc = view(sqrm, i, :)
         get_vector!(M, X, p_n, Xc, B)
-        sigma_points[2 * i] = exp(M, p_n, X)
-        sigma_points[2 * i + 1] = exp_fused(M, p_n, X, -1)
+        sigma_points[2 * i] = retract(M, p_n, X, retraction_method)
+        sigma_points[2 * i + 1] = retract_fused(M, p_n, X, -1, retraction_method)
     end
     return sigma_points
 end
@@ -452,6 +457,7 @@ function predict!(kalman::KalmanState, propagator::UnscentedPropagatorCache, con
         kalman.p_n,
         kalman.P_n,
         kalman.B_state,
+        kalman.state_retr,
     )
     # compute function values
 
@@ -547,7 +553,7 @@ function update_from_kalman_gain!(
     y_n = inverse_retract(kalman.M_obs, y_expected, measurement, kalman.obs_inv_retr)
     Kyc = K_n * get_coordinates(kalman.M_obs, y_expected, y_n, kalman.B_obs)
     KyX = get_vector(kalman.M, kalman.p_n, Kyc, kalman.B_state)
-    p_n_new = exp(kalman.M, kalman.p_n, KyX)
+    p_n_new = retract(kalman.M, kalman.p_n, KyX, kalman.state_retr)
 
     # adapt measurement covariance
     if !(kalman.measurement_covariance_adapter isa ConstantMeasurementCovarianceAdapter)
@@ -647,6 +653,7 @@ function update!(kalman::KalmanState, upd::UnscentedUpdaterCache, control, measu
         kalman.p_n,
         kalman.P_n,
         kalman.B_state,
+        kalman.state_retr,
     )
     # compute measurement function values
 

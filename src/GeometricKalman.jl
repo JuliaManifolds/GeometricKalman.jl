@@ -3,7 +3,8 @@ module GeometricKalman
 using LinearAlgebra
 
 using ManifoldsBase, Manifolds
-using ManifoldsBase: exp_fused, exp_fused!
+using ManifoldsBase: exp_fused, exp_fused!, retract_fused, retract_fused!
+using Manifolds: FiberBundleProductRetraction
 using Manopt
 
 using StatsBase
@@ -22,6 +23,7 @@ include("parameter_fitting.jl")
 
 include("processes/general.jl")
 include("processes/car_2d.jl")
+include("processes/car_sphere.jl")
 include("processes/rotating_earth.jl")
 
 export CovarianceMatchingMeasurementCovarianceAdapter,
