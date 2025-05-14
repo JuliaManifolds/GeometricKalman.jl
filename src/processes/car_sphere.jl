@@ -5,9 +5,8 @@ function car_sphere_f(p, q, noise, t::Real; vt=0.2)
     # spherical variant of car_f
     pos, dir = p.x
     # noise entries: differential odometry noise, lateral odometry noise, transversal odometry noise
-    X_dir_pre = get_vector(SO2, identity_element(SO2), [q * vt + noise[1]])
-    X_dir = get_vector(S2, pos, X_dir_pre * [1, 0])
-    X_pos = vt * dir .+ get_vector(S2, pos, noise[2:3])
+    X_dir = get_vector(S2, pos, [q * vt + noise[1], noise[2]])
+    X_pos = vt * dir .+ get_vector(S2, pos, noise[3:4])
     return ArrayPartition(X_pos, X_dir)
 end
 
@@ -20,7 +19,7 @@ function gen_car_sphere_data(;
     N::Int=100,
     dt::Real=0.01,
     p0=ArrayPartition([1.0, 0.0, 0.0], [0.0, 1.0, 0.0]),
-    noise_f_distr=MvNormal([0.0, 0.0, 0.0], diagm([0.001, 1e-10, 1.0])),
+    noise_f_distr=MvNormal([0.0, 0.0, 0.0, 0.0], diagm([0.001, 1e-10, 1e-10, 1.0])),
     noise_h_distr=MvNormal([0.0, 0.0], diagm([0.001, 0.001])),
     vt::Real=0.2,
     retraction::AbstractRetractionMethod=FiberBundleProductRetraction(),

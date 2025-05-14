@@ -58,10 +58,10 @@ function adapt_covariance!(
     W_n,
     HPHT,
     S_n,
-    residual,
+    residual_coords,
 )
     R .*= ca.α
-    R .+= (1 - ca.α) .* (W_n \ (residual * residual' + HPHT) / (W_n'))
+    R .+= (1 - ca.α) .* (W_n \ (residual_coords * residual_coords' + HPHT) / (W_n'))
     Manifolds.symmetrize!(R, R)
     return R
 end
@@ -561,13 +561,14 @@ function update_from_kalman_gain!(
         residual = inverse_retract(kalman.M_obs, hnew, measurement, kalman.obs_inv_retr)
         # println("innovation norm: ", norm(y_n))
         # println("residual norm: ", norm(residual))
+        residual_coords = get_coordinates(kalman.M_obs, hnew, residual, kalman.B_obs)
         adapt_covariance!(
             kalman.R,
             kalman.measurement_covariance_adapter,
             W_n,
             HPHT,
             S_n,
-            residual,
+            residual_coords,
         )
     end
 
