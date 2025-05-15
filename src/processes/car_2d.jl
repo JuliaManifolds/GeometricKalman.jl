@@ -10,9 +10,7 @@ function car_f(p, q, noise, t::Real; vt=0.2)
     return ArrayPartition(X_pos, X_dir)
 end
 
-function car_h(p, q, noise, t::Real)
-    return exp(Sphere(2), p.x[1], get_vector(Sphere(2), p.x[1], noise))
-end
+car_h(p, q, noise, t::Real) = p.x[1] + noise
 
 function gen_car_data(;
     N::Int=100,

@@ -432,6 +432,7 @@ function instantiate_propagator(M::AbstractManifold, propagator::UnscentedPropag
     num_sigma_points = 2 * N + 1
     sigma_point_cache = [allocate(M, p0) for _ in 1:num_sigma_points]
     Xcsr = Matrix{float(number_eltype(p0))}(undef, N, num_sigma_points)
+    fill!(Xcsr, NaN)
     mean_weights = Vector{Float64}(undef, num_sigma_points)
     cov_weights = Vector{Float64}(undef, num_sigma_points)
     fill_weights!(mean_weights, cov_weights, propagator.sp, M)
@@ -446,9 +447,27 @@ function instantiate_propagator(M::AbstractManifold, propagator::UnscentedPropag
     )
 end
 
+function fill_Xcsr!(kalman::KalmanState, propagator::UnscentedPropagatorCache, control, sigma_points)
+    mean_weights = propagator.mean_weights
+    fx = [kalman.f_tilde(p, control, kalman.zero_noise, kalman.t) for p in sigma_points]
+    # compute new mean and covariance
+    p_n = mean(kalman.M, fx, mean_weights)
+    for i in 1:length(mean_weights)
+        inverse_retract!(kalman.M, propagator.X, p_n, fx[i], propagator.propagator.inverse_retraction_method)
+        get_coordinates!(
+            kalman.M,
+            view(propagator.Xcsr, :, i),
+            p_n,
+            propagator.X,
+            kalman.B_state,
+        )
+    end
+    return p_n
+end
+
 function predict!(kalman::KalmanState, propagator::UnscentedPropagatorCache, control)
     prop = propagator.propagator
-    mean_weights = propagator.mean_weights
+    
     cov_weights = propagator.cov_weights
     sigma_points = get_sigma_points!(
         propagator.sigma_point_cache,
@@ -461,22 +480,8 @@ function predict!(kalman::KalmanState, propagator::UnscentedPropagatorCache, con
     )
     # compute function values
 
-    fx = [kalman.f_tilde(p, control, kalman.zero_noise, kalman.t) for p in sigma_points]
-    # compute new mean and covariance
-    p_n = mean(kalman.M, fx, mean_weights)
-    for i in 1:length(mean_weights)
-        inverse_retract!(kalman.M, propagator.X, p_n, fx[i], prop.inverse_retraction_method)
-        get_coordinates!(
-            kalman.M,
-            view(propagator.Xcsr, :, i),
-            p_n,
-            propagator.X,
-            kalman.B_state,
-        )
-    end
+    p_n = fill_Xcsr!(kalman, propagator, control, sigma_points)
     L_n = kalman.jacobian_w_f_tilde(kalman.p_n, control, kalman.zero_noise, kalman.t)
-
-    N = manifold_dimension(kalman.M)
 
     P_n = similar(kalman.P_n)
     fill!(P_n, 0)
@@ -691,6 +696,9 @@ function update!(kalman::KalmanState, upd::UnscentedUpdaterCache, control, measu
     S_n += W_n * kalman.R * W_n'
     # cross-covariance
     fill!(kalman.updater.Pxy, 0)
+    if any(isnan, kalman.propagator.Xcsr)
+        fill_Xcsr!(kalman, kalman.propagator, control, sigma_points)
+    end
     for i in 1:length(sigma_points)
         kalman.updater.Pxy .+=
             cov_weights[i] .* view(kalman.propagator.Xcsr, :, i) * view(upd.Hcsr, :, i)'
