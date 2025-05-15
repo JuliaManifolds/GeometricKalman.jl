@@ -5,7 +5,8 @@ function car_sphere_f(p, q, noise, t::Real; vt=0.2)
     # spherical variant of car_f
     pos, dir = p.x
     # noise entries: differential odometry noise, lateral odometry noise, transversal odometry noise
-    X_dir = get_vector(S2, pos, [q * vt + noise[1], noise[2]])
+    #X_dir = get_vector(S2, pos, [q * vt + noise[1], noise[2]])
+    X_dir = cross(pos, [0.0, q * vt + noise[1], noise[2]])
     X_pos = vt * dir .+ get_vector(S2, pos, noise[3:4])
     return ArrayPartition(X_pos, X_dir)
 end
