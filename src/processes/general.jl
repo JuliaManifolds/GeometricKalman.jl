@@ -59,6 +59,118 @@ function ManifoldsBase.retract!(
     )
 end
 
+function ManifoldsBase.retract_fused(
+    M::AbstractManifold,
+    p,
+    X,
+    t::Real,
+    ::InvariantExponentialRetraction,
+)
+    return exp_inv(M, p, t * X)
+end
+function ManifoldsBase.retract_fused!(
+    M::AbstractManifold,
+    q,
+    p,
+    X,
+    t::Real,
+    ::InvariantExponentialRetraction,
+)
+    return exp_inv!(M, q, p, t * X)
+end
+
+function ManifoldsBase.retract_fused(
+    M::AbstractDecoratorManifold,
+    p,
+    X,
+    t::Real,
+    ierm::InvariantExponentialRetraction,
+)
+    return invoke(
+        retract_fused,
+        Tuple{AbstractManifold,Any,Any,Real,InvariantExponentialRetraction},
+        M,
+        p,
+        X,
+        t,
+        ierm,
+    )
+end
+
+function ManifoldsBase.retract_fused!(
+    M::AbstractDecoratorManifold,
+    q,
+    p,
+    X,
+    t::Real,
+    ierm::InvariantExponentialRetraction,
+)
+    return invoke(
+        retract_fused!,
+        Tuple{AbstractManifold,Any,Any,Any,Real,InvariantExponentialRetraction},
+        M,
+        q,
+        p,
+        X,
+        t,
+        ierm,
+    )
+end
+
+struct InvariantLogarithmicInverseRetraction <: AbstractInverseRetractionMethod end
+
+function ManifoldsBase.inverse_retract(
+    M::AbstractManifold,
+    p,
+    q,
+    ::InvariantLogarithmicInverseRetraction,
+)
+    return log_inv(M, p, q)
+end
+function ManifoldsBase.inverse_retract!(
+    M::AbstractManifold,
+    X,
+    p,
+    q,
+    ::InvariantLogarithmicInverseRetraction,
+)
+    return log_inv!(M, X, p, q)
+end
+
+function ManifoldsBase.inverse_retract(
+    M::AbstractDecoratorManifold,
+    p,
+    q,
+    ierm::InvariantLogarithmicInverseRetraction,
+)
+    return invoke(
+        inverse_retract,
+        Tuple{AbstractManifold,Any,Any,InvariantLogarithmicInverseRetraction},
+        M,
+        p,
+        q,
+        ierm,
+    )
+end
+
+function ManifoldsBase.inverse_retract!(
+    M::AbstractDecoratorManifold,
+    X,
+    p,
+    q,
+    ierm::InvariantLogarithmicInverseRetraction,
+)
+    return invoke(
+        inverse_retract!,
+        Tuple{AbstractManifold,Any,Any,Any,InvariantLogarithmicInverseRetraction},
+        M,
+        X,
+        p,
+        q,
+        ierm,
+    )
+end
+
 function gen_data(
     M::AbstractManifold,
     p0,
