@@ -22,3 +22,24 @@ docs/site/
 # committed for packages, but should be committed for applications that require a static
 # environment.
 Manifest.toml
+
+
+docs/Manifest.toml
+docs/build
+docs/src/generated
+docs/src/misc/contributing.md
+docs/src/misc/CONTRIBUTING.md
+docs/src/misc/NEWS.md
+benchmark/tune.json
+benchmark/results*
+docs/src/tutorials/*.md
+.CondaPkg
+coverage
+*.cov
+tutorials/_freeze
+accuracy/*_files
+accuracy/_freeze
+accuracy/.quarto
+docs/src/tutorials/hand-gestures_files/figure-commonmark
+
+/.quarto/

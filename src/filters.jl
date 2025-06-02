@@ -110,7 +110,7 @@ Notably, when ``f`` is given by an action of a Lie group  on ``y(t)``, i.e.
 and an action ``\circ`` of group ``\mathbb{G}`` on manifold ``\mathbb{M}``, the system can be solved using
 RKMK integrators.
 
-Such system is a generalization of the IEKF from [BarrauBonnabel:2015](@cite),
+Such system is a generalization of the IEKF from [BarrauBonnabel:2018](@cite),
 where ``\mathcal{M} = \mathcal{G}`` and action represents either left or right group
 operation action.
 
@@ -318,6 +318,11 @@ function predict!(kalman::KalmanState, control)
     return predict!(kalman, kalman.propagator, control)
 end
 
+"""
+    EKFPropagator <: AbstractKFPropagator
+
+Propagation step of the extended Kalman filter.
+"""
 mutable struct EKFPropagator{TJacPF} <: AbstractKFPropagator
     jacobian_p_f_tilde::TJacPF
 end
@@ -343,6 +348,12 @@ function EKFPropagator(
     return EKFPropagator(jacobian_p_f_tilde)
 end
 
+"""
+    predict!(kalman::KalmanState, prop::EKFPropagator, control)
+
+Perform prediction step of the Kalman filter represented by [`KalmanState`](@ref) `kalman`
+with [`EKFPropagator`](@ref) propagation rule.
+"""
 function predict!(kalman::KalmanState, prop::EKFPropagator, control)
     # mean propagation
     p_n_nm1 = kalman.f_tilde(kalman.p_n, control, kalman.zero_noise, kalman.t)
@@ -365,8 +376,9 @@ end
 abstract type UnscentedSigmaPoints end
 
 """
+    WanMerweSigmaPoints <: UnscentedSigmaPoints
 
-
+A structure that represents the sigma points proposed by E. A. Wan and R. Van Der Merwe.
 
 Source: E. A. Wan and R. Van Der Merwe, “The unscented Kalman filter for nonlinear
 estimation,” in Proceedings of the IEEE 2000 Adaptive Systems for Signal Processing,
@@ -527,6 +539,13 @@ function fill_Xcsr!(
     return p_n
 end
 
+
+"""
+    predict!(kalman::KalmanState, prop::UnscentedPropagatorCache, control)
+
+Perform prediction step of the Kalman filter represented by [`KalmanState`](@ref) `kalman`
+with the cached variant of the [`UnscentedPropagator`](@ref) propagation rule.
+"""
 function predict!(kalman::KalmanState, propagator::UnscentedPropagatorCache, control)
     prop = propagator.propagator
 
@@ -563,6 +582,11 @@ function predict!(kalman::KalmanState, propagator::UnscentedPropagatorCache, con
     return kalman
 end
 
+"""
+    EKFUpdater <: AbstractKFUpdater
+
+Update step of the extended Kalman filter.
+"""
 mutable struct EKFUpdater{TJacPH} <: AbstractKFUpdater
     jacobian_p_h::TJacPH
 end
@@ -658,6 +682,12 @@ function update_from_kalman_gain!(
     return kalman
 end
 
+"""
+    update!(kalman::KalmanState, upd::EKFUpdater, control, measurement)
+
+Perform the update step of the Kalman filter represented by [`KalmanState`](@ref) `kalman` 
+with update rule [`EKFUpdater`](@ref).
+"""
 function update!(kalman::KalmanState, upd::EKFUpdater, control, measurement)
     # compute discrepancy between expected and actual measurement
     y_expected = kalman.h(kalman.p_n, control, kalman.zero_noise_obs, kalman.t)
@@ -671,6 +701,11 @@ function update!(kalman::KalmanState, upd::EKFUpdater, control, measurement)
     return kalman
 end
 
+"""
+    UnscentedUpdater
+
+Update step of the unscented Kalman filter.
+"""
 struct UnscentedUpdater{TSP<:UnscentedSigmaPoints,TIM<:AbstractInverseRetractionMethod} <:
        AbstractKFUpdater
     sp::TSP
@@ -717,6 +752,13 @@ function instantiate_updater(
     return UnscentedUpdaterCache(updater, Hcsr, Pxy, X_obs)
 end
 
+
+"""
+    update!(kalman::KalmanState, upd::UnscentedUpdaterCache, control, measurement)
+
+Perform the update step of the Kalman filter represented by [`KalmanState`](@ref) `kalman` 
+with the cached variant of the update rule [`UnscentedUpdater`](@ref).
+"""
 function update!(kalman::KalmanState, upd::UnscentedUpdaterCache, control, measurement)
     mean_weights = kalman.propagator.mean_weights
     cov_weights = kalman.propagator.cov_weights
