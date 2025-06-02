@@ -39,7 +39,7 @@ using GeometricKalman: make_kalman_parameter_fitting_objective
         (
             "UKF",
             (;
-                propagator=UnscentedPropagator(; sigma_points=sp),
+                propagator=UnscentedPropagator(M; sigma_points=sp),
                 updater=UnscentedUpdater(; sigma_points=sp),
             ),
         ),

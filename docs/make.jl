@@ -32,9 +32,7 @@ tutorials_in_menu = !("--exclude-tutorials" ∈ ARGS)
 #
 #
 # (a) setup the tutorials menu – check whether all files exist
-tutorials_menu =
-    "How to..." => [
-    ]
+tutorials_menu = "How to..." => []
 # Check whether all tutorials are rendered, issue a warning if not (and quarto if not set)
 all_tutorials_exist = true
 for (name, file) in tutorials_menu.second
@@ -145,10 +143,8 @@ makedocs(;
         "Home" => "index.md",
         (tutorials_in_menu ? [tutorials_menu] : [])...,
         "Interface" => "interface.md",
-        "Miscellanea" => [
-            "Changelog" => "misc/NEWS.md",
-            "References" => "misc/references.md",
-        ],
+        "Miscellanea" =>
+            ["Changelog" => "misc/NEWS.md", "References" => "misc/references.md"],
     ],
     plugins=[bib, links],
     warnonly=[:missing_docs],

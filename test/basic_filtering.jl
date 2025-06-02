@@ -31,7 +31,7 @@ using GeometricKalman: default_discretization, car_f, car_h, gen_car_data
         (
             "UKF",
             (;
-                propagator=UnscentedPropagator(; sigma_points=sp),
+                propagator=UnscentedPropagator(M; sigma_points=sp),
                 updater=UnscentedUpdater(; sigma_points=sp),
             ),
         ),

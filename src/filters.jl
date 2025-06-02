@@ -449,7 +449,7 @@ Communications, and Control Symposium (Cat. No.00EX373), Lake Louise, Alta., Can
 struct UnscentedPropagator{
     TSP<:UnscentedSigmaPoints,
     TIM<:AbstractInverseRetractionMethod,
-    TMAM<:AbstractApproximationMethod
+    TMAM<:AbstractApproximationMethod,
 } <: AbstractKFPropagator
     sp::TSP
     inverse_retraction_method::TIM
@@ -458,10 +458,19 @@ end
 function UnscentedPropagator(
     M::AbstractManifold;
     sigma_points::UnscentedSigmaPoints=WanMerweSigmaPoints(),
-    inverse_retraction_method::AbstractInverseRetractionMethod=default_inverse_retraction_method(M),
-    mean_approximation_method::AbstractApproximationMethod=default_approximation_method(M, mean)
+    inverse_retraction_method::AbstractInverseRetractionMethod=default_inverse_retraction_method(
+        M,
+    ),
+    mean_approximation_method::AbstractApproximationMethod=default_approximation_method(
+        M,
+        mean,
+    ),
 )
-    return UnscentedPropagator{typeof(sigma_points),typeof(inverse_retraction_method),typeof(mean_approximation_method)}(
+    return UnscentedPropagator{
+        typeof(sigma_points),
+        typeof(inverse_retraction_method),
+        typeof(mean_approximation_method),
+    }(
         sigma_points,
         inverse_retraction_method,
         mean_approximation_method,
@@ -538,7 +547,6 @@ function fill_Xcsr!(
     end
     return p_n
 end
-
 
 """
     predict!(kalman::KalmanState, prop::UnscentedPropagatorCache, control)
@@ -751,7 +759,6 @@ function instantiate_updater(
     Pxy = similar(Hcsr, N, N_obs)
     return UnscentedUpdaterCache(updater, Hcsr, Pxy, X_obs)
 end
-
 
 """
     update!(kalman::KalmanState, upd::UnscentedUpdaterCache, control, measurement)

@@ -96,7 +96,7 @@ end
         (
             "UKF",
             (;
-                propagator=UnscentedPropagator(; sigma_points=sp),
+                propagator=UnscentedPropagator(M; sigma_points=sp),
                 updater=UnscentedUpdater(; sigma_points=sp),
             ),
         ),
@@ -201,7 +201,7 @@ end
         (
             "UKF",
             (;
-                propagator=UnscentedPropagator(; sigma_points=sp),
+                propagator=UnscentedPropagator(M; sigma_points=sp),
                 updater=UnscentedUpdater(; sigma_points=sp),
             ),
         ),
