@@ -6,6 +6,10 @@ using GeometricKalman: gen_car_data, default_discretization, car_h, car_f, car_c
 
 using GeometricKalman: make_kalman_parameter_fitting_objective
 
+using Random
+
+Random.seed!(10)
+
 @testset "Parameter fitting" begin
     dt = 0.01
     vt = 5
