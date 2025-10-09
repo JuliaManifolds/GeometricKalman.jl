@@ -1,6 +1,6 @@
 function car_sphere_f(p, q, noise, t::Real; vt = 0.2)
     S2 = Sphere(2)
-    SO2 = SpecialOrthogonal(2)
+    SO2 = SpecialOrthogonalGroup(2)
     # spherical variant of car_f
     pos, dir = p.x
     # noise entries: differential odometry noise, lateral odometry noise, transversal odometry noise
