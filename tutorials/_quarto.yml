@@ -1,5 +1,5 @@
 project:
-  title: "Manifolds.jl Tutorials"
+  title: "GeometricKalman.jl Tutorials"
   output-dir: ../docs/src/tutorials
   render:
     - "*.qmd"

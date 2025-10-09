@@ -65,31 +65,26 @@ end
 #
 # (b) if docs is not the current active environment, switch to it
 # (from https://github.com/JuliaIO/HDF5.jl/pull/1020/) 
+using Pkg
 if Base.active_project() != joinpath(@__DIR__, "Project.toml")
     using Pkg
     Pkg.activate(@__DIR__)
-    Pkg.develop(PackageSpec(; path = (@__DIR__) * "/../"))
-    Pkg.resolve()
     Pkg.instantiate()
 end
 
 # (c) If quarto is set, or we are on CI, run quarto
 if run_quarto || run_on_CI
-    using CondaPkg
-    CondaPkg.withenv() do
-        @info "Rendering Quarto"
-        tutorials_folder = (@__DIR__) * "/../tutorials"
-        # instantiate the tutorials environment if necessary
-        Pkg.activate(tutorials_folder)
-        # For a breaking release -> also set the tutorials folder to the most recent version
-        Pkg.develop(PackageSpec(; path = (@__DIR__) * "/../"))
-        Pkg.resolve()
-        Pkg.instantiate()
-        Pkg.build("IJulia") # build `IJulia` to the right version.
-        Pkg.activate(@__DIR__) # but return to the docs one before
-        run(`quarto render $(tutorials_folder)`)
-        return nothing
-    end
+    @info "Rendering Quarto"
+    tutorials_folder = (@__DIR__) * "/../tutorials"
+    # instantiate the tutorials environment if necessary
+    Pkg.activate(tutorials_folder)
+    # For a breaking release -> also set the tutorials folder to the most recent version
+    Pkg.instantiate()
+    Pkg.activate(@__DIR__) # but return to the docs one before
+    run(`quarto render $(tutorials_folder)`)
+else
+    # fallback to at least create empty files for tutorials that are directly linked from the docs
+    touch(joinpath(@__DIR__, "src/tutorials/getstarted.md"))
 end
 
 # (d) load necessary packages for the docs
