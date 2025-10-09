@@ -58,7 +58,7 @@ end
     )
 
     P0 = zeros(M_dim, M_dim)
-    view(P0, diagind(P0)) .= 1e-5
+    view(P0, diagind(P0)) .= 1.0e-5
     view(P0, 1:3, 1:3) .= diagm([0.1, 0.1, 0.1])
 
     Q = zeros(RotEarthProcessNoiseDimensionality, RotEarthProcessNoiseDimensionality)
@@ -69,7 +69,7 @@ end
     dt = 0.01
     N = 100
     em = EarthModel()
-    f_tilde = default_discretization(M, em; dt=dt)
+    f_tilde = default_discretization(M, em; dt = dt)
 
     noise_f_distr = MvNormal(zeros(RotEarthProcessNoiseDimensionality), Q)
     noise_h_distr = MvNormal(zeros(M_obs_dim), R)
@@ -82,33 +82,33 @@ end
         earth_control_zero,
         noise_f_distr,
         noise_h_distr;
-        N=N,
-        dt=dt,
-        retraction=RotEarthRetraction,
+        N = N,
+        dt = dt,
+        retraction = RotEarthRetraction,
     )
 
-    sp = WanMerweSigmaPoints(; α=1.0)
+    sp = WanMerweSigmaPoints(; α = 1.0)
     params = [
         (
             "EKF",
-            (; propagator=EKFPropagator(M, f_tilde), updater=EKFUpdater(M, M_obs, earth_h)),
+            (; propagator = EKFPropagator(M, f_tilde), updater = EKFUpdater(M, M_obs, earth_h)),
         ),
         (
             "UKF",
             (;
-                propagator=UnscentedPropagator(M; sigma_points=sp),
-                updater=UnscentedUpdater(; sigma_points=sp),
+                propagator = UnscentedPropagator(M; sigma_points = sp),
+                updater = UnscentedUpdater(; sigma_points = sp),
             ),
         ),
         (
             "EKF adaptive α=0.99",
             (;
-                propagator=EKFPropagator(M, f_tilde),
-                updater=EKFUpdater(M, M_obs, earth_h),
-                measurement_covariance_adapter=CovarianceMatchingMeasurementCovarianceAdapter(
+                propagator = EKFPropagator(M, f_tilde),
+                updater = EKFUpdater(M, M_obs, earth_h),
+                measurement_covariance_adapter = CovarianceMatchingMeasurementCovarianceAdapter(
                     0.99,
                 ),
-                process_covariance_adapter=CovarianceMatchingProcessCovarianceAdapter(0.99),
+                process_covariance_adapter = CovarianceMatchingProcessCovarianceAdapter(0.99),
             ),
         ),
     ]
@@ -123,7 +123,7 @@ end
             P0,
             copy(Q),
             copy(R);
-            process_noise_dimensionality=RotEarthProcessNoiseDimensionality,
+            process_noise_dimensionality = RotEarthProcessNoiseDimensionality,
             filter_kwargs...,
         )
 
@@ -161,7 +161,7 @@ end
     )
 
     P0 = zeros(M_dim, M_dim)
-    view(P0, diagind(P0)) .= 1e-5
+    view(P0, diagind(P0)) .= 1.0e-5
     view(P0, 1:3, 1:3) .= diagm([0.1, 0.1, 0.1])
 
     Q = zeros(RotEarthProcessNoiseDimensionality, RotEarthProcessNoiseDimensionality)
@@ -172,12 +172,12 @@ end
     dt = 0.01
     N = 50
     em = EarthModel()
-    f_tilde = default_discretization(M, em; dt=dt)
+    f_tilde = default_discretization(M, em; dt = dt)
 
     noise_f_distr = MvNormal(zeros(RotEarthProcessNoiseDimensionality), Q)
     noise_h_distr = MvNormal(zeros(M_obs_dim), R)
 
-    movement_control = EarthControlMovement(; X_pos_amplitude=10.0)
+    movement_control = EarthControlMovement(; X_pos_amplitude = 10.0)
 
     times, samples, controls, measurements = gen_data(
         M,
@@ -187,33 +187,33 @@ end
         movement_control,
         noise_f_distr,
         noise_h_distr;
-        N=N,
-        dt=dt,
-        retraction=RotEarthRetraction,
+        N = N,
+        dt = dt,
+        retraction = RotEarthRetraction,
     )
 
-    sp = WanMerweSigmaPoints(; α=1.0)
+    sp = WanMerweSigmaPoints(; α = 1.0)
     params = [
         (
             "EKF",
-            (; propagator=EKFPropagator(M, f_tilde), updater=EKFUpdater(M, M_obs, earth_h)),
+            (; propagator = EKFPropagator(M, f_tilde), updater = EKFUpdater(M, M_obs, earth_h)),
         ),
         (
             "UKF",
             (;
-                propagator=UnscentedPropagator(M; sigma_points=sp),
-                updater=UnscentedUpdater(; sigma_points=sp),
+                propagator = UnscentedPropagator(M; sigma_points = sp),
+                updater = UnscentedUpdater(; sigma_points = sp),
             ),
         ),
         (
             "EKF adaptive α=0.99",
             (;
-                propagator=EKFPropagator(M, f_tilde),
-                updater=EKFUpdater(M, M_obs, earth_h),
-                measurement_covariance_adapter=CovarianceMatchingMeasurementCovarianceAdapter(
+                propagator = EKFPropagator(M, f_tilde),
+                updater = EKFUpdater(M, M_obs, earth_h),
+                measurement_covariance_adapter = CovarianceMatchingMeasurementCovarianceAdapter(
                     0.99,
                 ),
-                process_covariance_adapter=CovarianceMatchingProcessCovarianceAdapter(0.99),
+                process_covariance_adapter = CovarianceMatchingProcessCovarianceAdapter(0.99),
             ),
         ),
     ]
@@ -228,7 +228,7 @@ end
             P0,
             copy(Q),
             copy(R);
-            process_noise_dimensionality=RotEarthProcessNoiseDimensionality,
+            process_noise_dimensionality = RotEarthProcessNoiseDimensionality,
             filter_kwargs...,
         )
 

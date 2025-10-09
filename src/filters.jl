@@ -1,4 +1,3 @@
-
 abstract type AbstractKFPropagator end
 
 function instantiate_propagator(::AbstractManifold, propagator::AbstractKFPropagator, p0)
@@ -8,15 +7,15 @@ end
 abstract type AbstractKFUpdater end
 
 function instantiate_updater(
-    ::AbstractManifold,
-    ::AbstractManifold,
-    updater::AbstractKFUpdater,
-    p0,
-    h,
-    control_prototype,
-    zero_noise_obs,
-    t0::Real,
-)
+        ::AbstractManifold,
+        ::AbstractManifold,
+        updater::AbstractKFUpdater,
+        p0,
+        h,
+        control_prototype,
+        zero_noise_obs,
+        t0::Real,
+    )
     return updater
 end
 
@@ -47,19 +46,19 @@ adapt_covariance!(Q::AbstractMatrix, ::ConstantProcessCovarianceAdapter, Kyc, L_
 
 Corresponds to Eq. (11) from [AkhlaghiZhouHuang:2017](@cite) with added `W_n`.
 """
-struct CovarianceMatchingMeasurementCovarianceAdapter{T<:Real} <:
-       AbstractMeasurementCovarianceAdapter
+struct CovarianceMatchingMeasurementCovarianceAdapter{T <: Real} <:
+    AbstractMeasurementCovarianceAdapter
     α::T
 end
 
 function adapt_covariance!(
-    R::AbstractMatrix,
-    ca::CovarianceMatchingMeasurementCovarianceAdapter,
-    W_n,
-    HPHT,
-    S_n,
-    residual_coords,
-)
+        R::AbstractMatrix,
+        ca::CovarianceMatchingMeasurementCovarianceAdapter,
+        W_n,
+        HPHT,
+        S_n,
+        residual_coords,
+    )
     R .*= ca.α
     R .+= (1 - ca.α) .* (W_n \ (residual_coords * residual_coords' + HPHT) / (W_n'))
     Manifolds.symmetrize!(R, R)
@@ -70,17 +69,17 @@ end
 
 Corresponds to Eq. (15) from [AkhlaghiZhouHuang:2017](@cite) with added `L_n`.
 """
-struct CovarianceMatchingProcessCovarianceAdapter{T<:Real} <:
-       AbstractProcessCovarianceAdapter
+struct CovarianceMatchingProcessCovarianceAdapter{T <: Real} <:
+    AbstractProcessCovarianceAdapter
     α::T
 end
 
 function adapt_covariance!(
-    Q::AbstractMatrix,
-    ca::CovarianceMatchingProcessCovarianceAdapter,
-    Kyc,
-    L_n,
-)
+        Q::AbstractMatrix,
+        ca::CovarianceMatchingProcessCovarianceAdapter,
+        Kyc,
+        L_n,
+    )
     Q .*= ca.α
     Q .+= (1 - ca.α) .* (L_n \ (Kyc * Kyc') / (L_n'))
     Manifolds.symmetrize!(Q, Q)
@@ -161,29 +160,29 @@ Note: for linear noise, ``L_n`` is the identity matrix.
 * `B`: basis type in which covariance and Jacobian matrices are computed
 """
 mutable struct KalmanState{
-    TM<:AbstractManifold,
-    TMobs<:AbstractManifold,
-    TB<:AbstractBasis{ℝ},
-    TBobs<:AbstractBasis{ℝ},
-    TVT<:AbstractVectorTransportMethod,
-    TProp<:AbstractKFPropagator,
-    TUpd<:AbstractKFUpdater,
-    TOIR<:AbstractInverseRetractionMethod,
-    TSR<:AbstractRetractionMethod,
-    TSIR<:AbstractInverseRetractionMethod,
-    TMCA<:AbstractMeasurementCovarianceAdapter,
-    TPCA<:AbstractProcessCovarianceAdapter,
-    TCov_P<:AbstractMatrix{<:Real},
-    TCov_Q<:AbstractMatrix{<:Real},
-    TCov_R<:AbstractMatrix{<:Real},
-    TP,
-    TF,
-    TH,
-    TZN,
-    TZNobs,
-    TJacWF,
-    TJacWH,
-}
+        TM <: AbstractManifold,
+        TMobs <: AbstractManifold,
+        TB <: AbstractBasis{ℝ},
+        TBobs <: AbstractBasis{ℝ},
+        TVT <: AbstractVectorTransportMethod,
+        TProp <: AbstractKFPropagator,
+        TUpd <: AbstractKFUpdater,
+        TOIR <: AbstractInverseRetractionMethod,
+        TSR <: AbstractRetractionMethod,
+        TSIR <: AbstractInverseRetractionMethod,
+        TMCA <: AbstractMeasurementCovarianceAdapter,
+        TPCA <: AbstractProcessCovarianceAdapter,
+        TCov_P <: AbstractMatrix{<:Real},
+        TCov_Q <: AbstractMatrix{<:Real},
+        TCov_R <: AbstractMatrix{<:Real},
+        TP,
+        TF,
+        TH,
+        TZN,
+        TZNobs,
+        TJacWF,
+        TJacWH,
+    }
     M::TM
     M_obs::TMobs
     B_state::TB
@@ -231,55 +230,55 @@ Construct a Kalman filter on manifold `M`.
   Can be used for constructing caches by some algorithms.
 """
 function discrete_kalman_filter_manifold(
-    M::AbstractManifold,
-    M_obs::AbstractManifold,
-    p0,
-    f_tilde,
-    h,
-    P0,
-    Q,
-    R;
-    B_M::AbstractBasis=DefaultOrthonormalBasis(),
-    B_M_obs::AbstractBasis=DefaultOrthonormalBasis(),
-    vt::AbstractVectorTransportMethod=default_vector_transport_method(M),
-    t0::Real=0.0,
-    dt::Real=0.01,
-    obs_inv_retr::AbstractInverseRetractionMethod=default_inverse_retraction_method(M_obs),
-    state_retr::AbstractRetractionMethod=default_retraction_method(M),
-    state_inv_retr::AbstractInverseRetractionMethod=default_inverse_retraction_method(M),
-    propagator::AbstractKFPropagator=EKFPropagator(
-        M,
-        f_tilde;
-        B_M=B_M,
-        retraction=state_retr,
-        inverse_retraction=state_inv_retr,
-    ),
-    updater::AbstractKFUpdater=EKFUpdater(
-        M,
-        M_obs,
-        h;
-        B_M=B_M,
-        B_M_obs=B_M_obs,
-        retraction_M=state_retr,
-        inverse_retraction_M_obs=obs_inv_retr,
-    ),
-    jacobian_w_f_tilde=default_jacobian_w_discrete(
-        M,
-        f_tilde;
-        jacobian_basis=B_M,
-        inverse_retraction=state_inv_retr,
-    ),
-    jacobian_w_h=default_jacobian_w_discrete(
-        M_obs,
-        h;
-        jacobian_basis=B_M_obs,
-        inverse_retraction=obs_inv_retr,
-    ),
-    measurement_covariance_adapter::AbstractMeasurementCovarianceAdapter=ConstantMeasurementCovarianceAdapter(),
-    process_covariance_adapter::AbstractProcessCovarianceAdapter=ConstantProcessCovarianceAdapter(),
-    control_prototype=nothing,
-    process_noise_dimensionality::Int=size(P0, 1),
-)
+        M::AbstractManifold,
+        M_obs::AbstractManifold,
+        p0,
+        f_tilde,
+        h,
+        P0,
+        Q,
+        R;
+        B_M::AbstractBasis = DefaultOrthonormalBasis(),
+        B_M_obs::AbstractBasis = DefaultOrthonormalBasis(),
+        vt::AbstractVectorTransportMethod = default_vector_transport_method(M),
+        t0::Real = 0.0,
+        dt::Real = 0.01,
+        obs_inv_retr::AbstractInverseRetractionMethod = default_inverse_retraction_method(M_obs),
+        state_retr::AbstractRetractionMethod = default_retraction_method(M),
+        state_inv_retr::AbstractInverseRetractionMethod = default_inverse_retraction_method(M),
+        propagator::AbstractKFPropagator = EKFPropagator(
+            M,
+            f_tilde;
+            B_M = B_M,
+            retraction = state_retr,
+            inverse_retraction = state_inv_retr,
+        ),
+        updater::AbstractKFUpdater = EKFUpdater(
+            M,
+            M_obs,
+            h;
+            B_M = B_M,
+            B_M_obs = B_M_obs,
+            retraction_M = state_retr,
+            inverse_retraction_M_obs = obs_inv_retr,
+        ),
+        jacobian_w_f_tilde = default_jacobian_w_discrete(
+            M,
+            f_tilde;
+            jacobian_basis = B_M,
+            inverse_retraction = state_inv_retr,
+        ),
+        jacobian_w_h = default_jacobian_w_discrete(
+            M_obs,
+            h;
+            jacobian_basis = B_M_obs,
+            inverse_retraction = obs_inv_retr,
+        ),
+        measurement_covariance_adapter::AbstractMeasurementCovarianceAdapter = ConstantMeasurementCovarianceAdapter(),
+        process_covariance_adapter::AbstractProcessCovarianceAdapter = ConstantProcessCovarianceAdapter(),
+        control_prototype = nothing,
+        process_noise_dimensionality::Int = size(P0, 1),
+    )
     zero_noise = zeros(process_noise_dimensionality)
     zero_noise_obs = zeros(size(R, 1))
     instantiated_propagator = instantiate_propagator(M, propagator, p0)
@@ -328,22 +327,22 @@ mutable struct EKFPropagator{TJacPF} <: AbstractKFPropagator
 end
 
 function EKFPropagator(
-    M::AbstractManifold,
-    f;
-    B_M::AbstractBasis{ℝ}=DefaultOrthonormalBasis(),
-    retraction::AbstractRetractionMethod=default_retraction_method(M),
-    inverse_retraction::AbstractInverseRetractionMethod=default_inverse_retraction_method(
-        M,
-    ),
-)
+        M::AbstractManifold,
+        f;
+        B_M::AbstractBasis{ℝ} = DefaultOrthonormalBasis(),
+        retraction::AbstractRetractionMethod = default_retraction_method(M),
+        inverse_retraction::AbstractInverseRetractionMethod = default_inverse_retraction_method(
+            M,
+        ),
+    )
     jacobian_p_f_tilde = default_jacobian_p_discrete(
         M,
         M,
         f;
-        jacobian_basis_arg=B_M,
-        jacobian_basis_val=B_M,
-        retraction=retraction,
-        inverse_retraction=inverse_retraction,
+        jacobian_basis_arg = B_M,
+        jacobian_basis_val = B_M,
+        retraction = retraction,
+        inverse_retraction = inverse_retraction,
     )
     return EKFPropagator(jacobian_p_f_tilde)
 end
@@ -385,22 +384,22 @@ estimation,” in Proceedings of the IEEE 2000 Adaptive Systems for Signal Proce
 Communications, and Control Symposium (Cat. No.00EX373), Lake Louise, Alta., Canada: IEEE,
 2000, pp. 153–158. doi: 10.1109/ASSPCC.2000.882463.
 """
-struct WanMerweSigmaPoints{TF<:Real} <: UnscentedSigmaPoints
+struct WanMerweSigmaPoints{TF <: Real} <: UnscentedSigmaPoints
     α::TF
     β::TF
     κ::TF
 end
 
-function WanMerweSigmaPoints(; α::T=1e-3, β::T=2.0, κ::T=0.0) where {T}
+function WanMerweSigmaPoints(; α::T = 1.0e-3, β::T = 2.0, κ::T = 0.0) where {T}
     return WanMerweSigmaPoints(α, β, κ)
 end
 
 function fill_weights!(
-    mean_weights,
-    cov_weights,
-    sp::WanMerweSigmaPoints,
-    M::AbstractManifold,
-)
+        mean_weights,
+        cov_weights,
+        sp::WanMerweSigmaPoints,
+        M::AbstractManifold,
+    )
     L = manifold_dimension(M)
     λ = sp.α^2 * (L + sp.κ) - L
     fill!(mean_weights, 1 / (2 * (L + λ)))
@@ -410,14 +409,14 @@ function fill_weights!(
 end
 
 function get_sigma_points!(
-    sigma_points,
-    sp::WanMerweSigmaPoints,
-    M::AbstractManifold,
-    p_n,
-    P_n,
-    B::AbstractBasis,
-    retraction_method::AbstractRetractionMethod,
-)
+        sigma_points,
+        sp::WanMerweSigmaPoints,
+        M::AbstractManifold,
+        p_n,
+        P_n,
+        B::AbstractBasis,
+        retraction_method::AbstractRetractionMethod,
+    )
 
     # prepare sigma points and weights
     # note that our indices are shifted by 1 compared to Wan's paper.
@@ -447,25 +446,25 @@ Communications, and Control Symposium (Cat. No.00EX373), Lake Louise, Alta., Can
 2000, pp. 153–158. doi: 10.1109/ASSPCC.2000.882463.
 """
 struct UnscentedPropagator{
-    TSP<:UnscentedSigmaPoints,
-    TIM<:AbstractInverseRetractionMethod,
-    TMAM<:AbstractApproximationMethod,
-} <: AbstractKFPropagator
+        TSP <: UnscentedSigmaPoints,
+        TIM <: AbstractInverseRetractionMethod,
+        TMAM <: AbstractApproximationMethod,
+    } <: AbstractKFPropagator
     sp::TSP
     inverse_retraction_method::TIM
     mean_approximation_method::TMAM
 end
 function UnscentedPropagator(
-    M::AbstractManifold;
-    sigma_points::UnscentedSigmaPoints=WanMerweSigmaPoints(),
-    inverse_retraction_method::AbstractInverseRetractionMethod=default_inverse_retraction_method(
-        M,
-    ),
-    mean_approximation_method::AbstractApproximationMethod=default_approximation_method(
-        M,
-        mean,
-    ),
-)
+        M::AbstractManifold;
+        sigma_points::UnscentedSigmaPoints = WanMerweSigmaPoints(),
+        inverse_retraction_method::AbstractInverseRetractionMethod = default_inverse_retraction_method(
+            M,
+        ),
+        mean_approximation_method::AbstractApproximationMethod = default_approximation_method(
+            M,
+            mean,
+        ),
+    )
     return UnscentedPropagator{
         typeof(sigma_points),
         typeof(inverse_retraction_method),
@@ -478,12 +477,12 @@ function UnscentedPropagator(
 end
 
 struct UnscentedPropagatorCache{
-    TProp<:UnscentedPropagator,
-    TMX<:AbstractMatrix,
-    TSP<:AbstractVector,
-    TW<:AbstractVector{<:Real},
-    TXV,
-} <: AbstractKFPropagator
+        TProp <: UnscentedPropagator,
+        TMX <: AbstractMatrix,
+        TSP <: AbstractVector,
+        TW <: AbstractVector{<:Real},
+        TXV,
+    } <: AbstractKFPropagator
     propagator::TProp
     Xcsr::TMX
     sigma_point_cache::TSP
@@ -513,11 +512,11 @@ function instantiate_propagator(M::AbstractManifold, propagator::UnscentedPropag
 end
 
 function fill_Xcsr!(
-    kalman::KalmanState,
-    propagator::UnscentedPropagatorCache,
-    control,
-    sigma_points,
-)
+        kalman::KalmanState,
+        propagator::UnscentedPropagatorCache,
+        control,
+        sigma_points,
+    )
     mean_weights = propagator.mean_weights
     fx = [kalman.f_tilde(p, control, kalman.zero_noise, kalman.t) for p in sigma_points]
     # compute new mean and covariance
@@ -526,8 +525,8 @@ function fill_Xcsr!(
         fx,
         mean_weights,
         propagator.propagator.mean_approximation_method;
-        retraction=kalman.state_retr,
-        inverse_retraction=kalman.state_inv_retr,
+        retraction = kalman.state_retr,
+        inverse_retraction = kalman.state_inv_retr,
     )
     for i in 1:length(mean_weights)
         inverse_retract!(
@@ -600,24 +599,24 @@ mutable struct EKFUpdater{TJacPH} <: AbstractKFUpdater
 end
 
 function EKFUpdater(
-    M::AbstractManifold,
-    M_obs::AbstractManifold,
-    h;
-    B_M::AbstractBasis{ℝ}=DefaultOrthonormalBasis(),
-    B_M_obs::AbstractBasis{ℝ}=DefaultOrthonormalBasis(),
-    retraction_M::AbstractRetractionMethod=default_retraction_method(M),
-    inverse_retraction_M_obs::AbstractInverseRetractionMethod=default_inverse_retraction_method(
-        M_obs,
-    ),
-)
+        M::AbstractManifold,
+        M_obs::AbstractManifold,
+        h;
+        B_M::AbstractBasis{ℝ} = DefaultOrthonormalBasis(),
+        B_M_obs::AbstractBasis{ℝ} = DefaultOrthonormalBasis(),
+        retraction_M::AbstractRetractionMethod = default_retraction_method(M),
+        inverse_retraction_M_obs::AbstractInverseRetractionMethod = default_inverse_retraction_method(
+            M_obs,
+        ),
+    )
     jacobian_p_h = default_jacobian_p_discrete(
         M,
         M_obs,
         h;
-        jacobian_basis_arg=B_M,
-        jacobian_basis_val=B_M_obs,
-        retraction=retraction_M,
-        inverse_retraction=inverse_retraction_M_obs,
+        jacobian_basis_arg = B_M,
+        jacobian_basis_val = B_M_obs,
+        retraction = retraction_M,
+        inverse_retraction = inverse_retraction_M_obs,
     )
     return EKFUpdater(jacobian_p_h)
 end
@@ -636,24 +635,24 @@ function move_covariance!(kalman::KalmanState, p_n_new, P_n)
     return nothing
 end
 function move_covariance!(
-    kalman::KalmanState,
-    p_n_new,
-    P_n::AbstractMatrix{<:ForwardDiff.Dual},
-)
+        kalman::KalmanState,
+        p_n_new,
+        P_n::AbstractMatrix{<:ForwardDiff.Dual},
+    )
     # don't calculate Jacobian of this correction for now
     # TODO: find a way to handle it
 end
 
 function update_from_kalman_gain!(
-    kalman::KalmanState,
-    y_expected,
-    control,
-    measurement,
-    K_n,
-    S_n,
-    W_n,
-    HPHT,
-)
+        kalman::KalmanState,
+        y_expected,
+        control,
+        measurement,
+        K_n,
+        S_n,
+        W_n,
+        HPHT,
+    )
     # y_n is also called innovation
     y_n = inverse_retract(kalman.M_obs, y_expected, measurement, kalman.obs_inv_retr)
     Kyc = K_n * get_coordinates(kalman.M_obs, y_expected, y_n, kalman.B_obs)
@@ -714,27 +713,27 @@ end
 
 Update step of the unscented Kalman filter.
 """
-struct UnscentedUpdater{TSP<:UnscentedSigmaPoints,TIM<:AbstractInverseRetractionMethod} <:
-       AbstractKFUpdater
+struct UnscentedUpdater{TSP <: UnscentedSigmaPoints, TIM <: AbstractInverseRetractionMethod} <:
+    AbstractKFUpdater
     sp::TSP
     inverse_retraction_method::TIM
 end
 function UnscentedUpdater(;
-    sigma_points::UnscentedSigmaPoints=WanMerweSigmaPoints(),
-    inverse_retraction_method::AbstractInverseRetractionMethod=LogarithmicInverseRetraction(),
-)
-    return UnscentedUpdater{typeof(sigma_points),typeof(inverse_retraction_method)}(
+        sigma_points::UnscentedSigmaPoints = WanMerweSigmaPoints(),
+        inverse_retraction_method::AbstractInverseRetractionMethod = LogarithmicInverseRetraction(),
+    )
+    return UnscentedUpdater{typeof(sigma_points), typeof(inverse_retraction_method)}(
         sigma_points,
         inverse_retraction_method,
     )
 end
 
 struct UnscentedUpdaterCache{
-    TUpd<:UnscentedUpdater,
-    TMX<:AbstractMatrix,
-    TPxy<:AbstractMatrix,
-    TXObs,
-} <: AbstractKFUpdater
+        TUpd <: UnscentedUpdater,
+        TMX <: AbstractMatrix,
+        TPxy <: AbstractMatrix,
+        TXObs,
+    } <: AbstractKFUpdater
     updater::TUpd
     Hcsr::TMX
     Pxy::TPxy
@@ -742,15 +741,15 @@ struct UnscentedUpdaterCache{
 end
 
 function instantiate_updater(
-    M::AbstractManifold,
-    M_obs::AbstractManifold,
-    updater::UnscentedUpdater,
-    p0,
-    h,
-    control_prototype,
-    zero_noise_obs,
-    t0::Real,
-)
+        M::AbstractManifold,
+        M_obs::AbstractManifold,
+        updater::UnscentedUpdater,
+        p0,
+        h,
+        control_prototype,
+        zero_noise_obs,
+        t0::Real,
+    )
     N = manifold_dimension(M)
     N_obs = manifold_dimension(M_obs)
     num_sigma_points = 2 * N + 1

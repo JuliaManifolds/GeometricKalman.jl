@@ -5,23 +5,23 @@
 if "--help" ∈ ARGS
     println(
         """
-docs/make.jl
+        docs/make.jl
 
-Render the `GeometricKalman.jl` documentation with optional arguments
+        Render the `GeometricKalman.jl` documentation with optional arguments
 
-Arguments
-* `--exclude-tutorials` - exclude the tutorials from the menu of Documenter,
-  This can be used if not all tutorials are rendered and you want to therefore exclude links
-  to these, especially the corresponding menu. This option should not be set on CI.
-  Locally this is also set if `--quarto` is not set and not all tutorials are rendered.
-* `--help`              - print this help and exit without rendering the documentation
-* `--prettyurls`        – toggle the pretty urls part to true, which is always set on CI
-* `--quarto`            – (re)run the Quarto notebooks from the `tutorials/` folder before
-  generating the documentation. If they are generated once they are cached accordingly.
-  Then you can spare time in the rendering by not passing this argument.
-  If quarto is not run, some tutorials are generated as empty files, since they
-  are referenced from within the documentation.
-""",
+        Arguments
+        * `--exclude-tutorials` - exclude the tutorials from the menu of Documenter,
+          This can be used if not all tutorials are rendered and you want to therefore exclude links
+          to these, especially the corresponding menu. This option should not be set on CI.
+          Locally this is also set if `--quarto` is not set and not all tutorials are rendered.
+        * `--help`              - print this help and exit without rendering the documentation
+        * `--prettyurls`        – toggle the pretty urls part to true, which is always set on CI
+        * `--quarto`            – (re)run the Quarto notebooks from the `tutorials/` folder before
+          generating the documentation. If they are generated once they are cached accordingly.
+          Then you can spare time in the rendering by not passing this argument.
+          If quarto is not run, some tutorials are generated as empty files, since they
+          are referenced from within the documentation.
+        """,
     )
     exit(0)
 end
@@ -68,7 +68,7 @@ end
 if Base.active_project() != joinpath(@__DIR__, "Project.toml")
     using Pkg
     Pkg.activate(@__DIR__)
-    Pkg.develop(PackageSpec(; path=(@__DIR__) * "/../"))
+    Pkg.develop(PackageSpec(; path = (@__DIR__) * "/../"))
     Pkg.resolve()
     Pkg.instantiate()
 end
@@ -82,7 +82,7 @@ if run_quarto || run_on_CI
         # instantiate the tutorials environment if necessary
         Pkg.activate(tutorials_folder)
         # For a breaking release -> also set the tutorials folder to the most recent version
-        Pkg.develop(PackageSpec(; path=(@__DIR__) * "/../"))
+        Pkg.develop(PackageSpec(; path = (@__DIR__) * "/../"))
         Pkg.resolve()
         Pkg.instantiate()
         Pkg.build("IJulia") # build `IJulia` to the right version.
@@ -121,32 +121,32 @@ for fname in ["NEWS.md"]
 end
 
 # (f) final step: render the docs
-bib = CitationBibliography(joinpath(@__DIR__, "src", "references.bib"); style=:alpha)
+bib = CitationBibliography(joinpath(@__DIR__, "src", "references.bib"); style = :alpha)
 links = InterLinks(
     "ManifoldsBase" => ("https://juliamanifolds.github.io/ManifoldsBase.jl/stable/"),
 )
 modules = [GeometricKalman]
-if modules isa Vector{Union{Nothing,Module}}
+if modules isa Vector{Union{Nothing, Module}}
     error("At least one module has not been properly loaded: ", modules)
 end
 makedocs(;
-    format=Documenter.HTML(
-        prettyurls=(get(ENV, "CI", nothing) == "true") || ("--prettyurls" ∈ ARGS),
-        assets=["assets/favicon.ico", "assets/citations.css", "assets/link-icons.css"],
-        size_threshold_warn=200 * 2^10, # raise slightly from 100 to 200 KiB
-        size_threshold=300 * 2^10,      # raise slightly 200 to 300 KiB
+    format = Documenter.HTML(
+        prettyurls = (get(ENV, "CI", nothing) == "true") || ("--prettyurls" ∈ ARGS),
+        assets = ["assets/favicon.ico", "assets/citations.css", "assets/link-icons.css"],
+        size_threshold_warn = 200 * 2^10, # raise slightly from 100 to 200 KiB
+        size_threshold = 300 * 2^10,      # raise slightly 200 to 300 KiB
     ),
-    modules=modules,
-    authors="Mateusz Baran, Ronny Bergmann, and contributors.",
-    sitename="GeometricKalman.jl",
-    pages=[
+    modules = modules,
+    authors = "Mateusz Baran, Ronny Bergmann, and contributors.",
+    sitename = "GeometricKalman.jl",
+    pages = [
         "Home" => "index.md",
         (tutorials_in_menu ? [tutorials_menu] : [])...,
         "Interface" => "interface.md",
         "Miscellanea" =>
             ["Changelog" => "misc/NEWS.md", "References" => "misc/references.md"],
     ],
-    plugins=[bib, links],
-    warnonly=[:missing_docs],
+    plugins = [bib, links],
+    warnonly = [:missing_docs],
 )
-deploydocs(repo="github.com/JuliaManifolds/GeometricKalman.jl.git", push_preview=true)
+deploydocs(repo = "github.com/JuliaManifolds/GeometricKalman.jl.git", push_preview = true)

@@ -1,7 +1,7 @@
 using Test
 using GeometricKalman
 
-using Manifolds
+using Manifolds, LieGroups
 
 include("test_processes.jl")
 

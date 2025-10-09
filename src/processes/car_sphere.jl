@@ -1,5 +1,4 @@
-
-function car_sphere_f(p, q, noise, t::Real; vt=0.2)
+function car_sphere_f(p, q, noise, t::Real; vt = 0.2)
     S2 = Sphere(2)
     SO2 = SpecialOrthogonal(2)
     # spherical variant of car_f
@@ -17,14 +16,14 @@ function car_sphere_h(p, q, noise, t::Real)
 end
 
 function gen_car_sphere_data(;
-    N::Int=100,
-    dt::Real=0.01,
-    p0=ArrayPartition([1.0, 0.0, 0.0], [0.0, 1.0, 0.0]),
-    noise_f_distr=MvNormal([0.0, 0.0, 0.0, 0.0], diagm([0.001, 1e-10, 1e-10, 1.0])),
-    noise_h_distr=MvNormal([0.0, 0.0], diagm([0.001, 0.001])),
-    vt::Real=0.2,
-    retraction::AbstractRetractionMethod=FiberBundleProductRetraction(),
-)
+        N::Int = 100,
+        dt::Real = 0.01,
+        p0 = ArrayPartition([1.0, 0.0, 0.0], [0.0, 1.0, 0.0]),
+        noise_f_distr = MvNormal([0.0, 0.0, 0.0, 0.0], diagm([0.001, 1.0e-10, 1.0e-10, 1.0])),
+        noise_h_distr = MvNormal([0.0, 0.0], diagm([0.001, 0.001])),
+        vt::Real = 0.2,
+        retraction::AbstractRetractionMethod = FiberBundleProductRetraction(),
+    )
     return gen_data(
         TangentBundle(Sphere(2)),
         p0,
@@ -33,9 +32,9 @@ function gen_car_sphere_data(;
         car_control,
         noise_f_distr,
         noise_h_distr;
-        N=N,
-        dt=dt,
-        f_kwargs=(; vt=vt),
-        retraction=retraction,
+        N = N,
+        dt = dt,
+        f_kwargs = (; vt = vt),
+        retraction = retraction,
     )
 end
