@@ -32,4 +32,4 @@ RecursiveArrayTools = "3"
 StaticArrays = "1.0"
 
 [sources]
-LieGroups = { path = ".." }
+GeometricKalman = { path = ".." }
