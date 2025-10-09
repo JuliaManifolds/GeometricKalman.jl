@@ -14,9 +14,12 @@ StaticArrays = "90137ffa-7385-5640-81b9-e52037218182"
 Distributions = "0.22.6, 0.23, 0.24, 0.25"
 GeometricKalman = "0.1"
 IJulia = "1"
-Manifolds = "0.10"
-ManifoldsBase = "1"
+Manifolds = "0.11"
+ManifoldsBase = "2"
 Plots = "1"
 RecursiveArrayTools = "3"
 SpecialFunctions = "2"
 StaticArrays = "1"
+
+[sources]
+GeometricKalman = { path = ".." }
