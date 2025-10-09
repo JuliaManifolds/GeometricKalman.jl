@@ -1,4 +1,3 @@
-
 earth_control_zero(t::Real) = zeros(21)
 
 function earth_control_stationary(t::Real)
@@ -18,7 +17,7 @@ end
 
 function (ecm::EarthControlMovement)(t::Real)
     X_joint = 0.01 * [sin(0.01 * t), cos(0.01 * t), 0.0]
-    X_ω = [0.0, 0.0, 0.0]#[ecm.X_pos_angular_frequency * sin(ecm.X_pos_angular_frequency * t), 0.0, 0.0]
+    X_ω = [0.0, 0.0, 0.0] #[ecm.X_pos_angular_frequency * sin(ecm.X_pos_angular_frequency * t), 0.0, 0.0]
     X_pos = [0.0, 0.0, 0.0]
     # X_vel is 0 in axes X and Y because position changes are already handled elsewhere
     X_vel = [0.0, 0.0, 9.81]
@@ -43,7 +42,7 @@ const RotEarthProcessNoiseDimensionality = 6
 # state: SE(3) × S(2) × T(3) × T(3) × T(3) × T(3) × T(3) × T(3)
 # (position and orientation) × (joint orientation) × (velocity) × (angular velocity) × (acceleration) × (gyroscope bias A) × (gyroscope bias B) × (accelerometer bias A) × (accelerometer bias B)
 const RotEarthManifold = ProductManifold(
-    SpecialEuclidean(3),
+    SpecialEuclideanGroup(3),
     Sphere(2),
     Euclidean(3),
     Euclidean(3),
@@ -84,7 +83,7 @@ end
 const RotEarthObsManifold =
     ProductManifold(Euclidean(3), Euclidean(3), Euclidean(3), Euclidean(3), Euclidean(3))
 
-struct EarthModel{TMSO3<:SpecialOrthogonal,Te_SO3,TΩx,Tg<:AbstractVector}
+struct EarthModel{TMSO3 <: SpecialOrthogonalGroup, Te_SO3, TΩx, Tg <: AbstractVector}
     SO3::TMSO3
     e_SO3::Te_SO3
     Ωx::TΩx
@@ -100,9 +99,9 @@ function joint_rotation_matrix(joint::AbstractVector)
         sinφ = 0.0
 
         return [
-            (cosθ*cosφ) -(cosθ * sinφ) sinθ
+            (cosθ * cosφ) -(cosθ * sinφ) sinθ
             sinφ cosφ 0.0
-            -(sinθ * cosφ) (sinθ*sinφ) cosθ
+            -(sinθ * cosφ) (sinθ * sinφ) cosθ
         ]
     end
     jy = atan(joint[3], joint[2])
@@ -112,9 +111,9 @@ function joint_rotation_matrix(joint::AbstractVector)
     cosφ = joint[1]
     sinφ = sqrt(1 - cosφ^2)
     return [
-        (cosθ*cosφ) -(cosθ * sinφ) sinθ
+        (cosθ * cosφ) -(cosθ * sinφ) sinθ
         sinφ cosφ 0.0
-        -(sinθ * cosφ) (sinθ*sinφ) cosθ
+        -(sinθ * cosφ) (sinθ * sinφ) cosθ
     ]
 end
 
@@ -146,7 +145,7 @@ end
 
 function (em::EarthModel)(p, q, noise, t::Real)
     # unpack state
-    pos, R = p.x[1].x
+    R, pos = p.x[1].x
     joint = p.x[2]
     vel = p.x[3]
     ω = p.x[4]
@@ -168,7 +167,7 @@ function (em::EarthModel)(p, q, noise, t::Real)
     X_b_acc = q[19:21]
 
     total_X = ArrayPartition(
-        ArrayPartition(X_pos, X_R),
+        ArrayPartition(X_R, X_pos),
         X_joint,
         X_vel,
         X_ω,
@@ -182,10 +181,10 @@ function (em::EarthModel)(p, q, noise, t::Real)
 end
 
 function earth_h(p, q, noise, t::Real)
-    # IMU A is attached to the main body; IMU B is on the joint 
+    # IMU A is attached to the main body; IMU B is on the joint
 
     # unpack state
-    pos, R = p.x[1].x
+    R, pos = p.x[1].x
     joint = p.x[2]
     vel = p.x[3]
     ω = p.x[4]
@@ -218,20 +217,20 @@ end
 # with added joint of Sphere(2) degrees of freedom
 # see RotEarthManifold for state
 function gen_rotating_earth_data(;
-    N::Int=100,
-    dt::Real=0.01,
-    M::AbstractManifold=RotEarthManifold,
-    p0=ArrayPartition(
-        identity_element(SpecialEuclidean(3)),
-        [0.1, 0.0, 0.0],
-        [0.1, 0.0, 0.0],
-        [0.0, 0.0, 0.0],
-        [0.0, 0.0, 0.0],
-        [1.0, 0.0, 0.0],
-    ),
-    noise_f_distr=MvNormal([0.0, 0.0, 0.0], diagm([0.001, 1e-10, 1.0])),
-    noise_h_distr=MvNormal([0.0, 0.0], diagm([0.001, 0.001])),
-)
+        N::Int = 100,
+        dt::Real = 0.01,
+        M::AbstractManifold = RotEarthManifold,
+        p0 = ArrayPartition(
+            identity_element(SpecialEuclideanGroup(3), ArrayPartition),
+            [0.1, 0.0, 0.0],
+            [0.1, 0.0, 0.0],
+            [0.0, 0.0, 0.0],
+            [0.0, 0.0, 0.0],
+            [1.0, 0.0, 0.0],
+        ),
+        noise_f_distr = MvNormal([0.0, 0.0, 0.0], diagm([0.001, 1.0e-10, 1.0])),
+        noise_h_distr = MvNormal([0.0, 0.0], diagm([0.001, 0.001])),
+    )
     return gen_data(
         M,
         p0,
@@ -240,7 +239,7 @@ function gen_rotating_earth_data(;
         earth_control,
         noise_f_distr,
         noise_h_distr;
-        N=N,
-        dt=dt,
+        N = N,
+        dt = dt,
     )
 end

@@ -1,10 +1,9 @@
-
 function default_discretization(
-    M::AbstractManifold,
-    f;
-    dt::Real=0.01,
-    retraction::AbstractRetractionMethod=ExponentialRetraction(),
-)
+        M::AbstractManifold,
+        f;
+        dt::Real = 0.01,
+        retraction::AbstractRetractionMethod = ExponentialRetraction(),
+    )
     return function tilde_f(p, q, w, t::Real)
         return ManifoldsBase.retract_fused(M, p, f(p, q, w, t), dt, retraction)
     end
@@ -13,27 +12,27 @@ end
 struct InvariantExponentialRetraction <: AbstractRetractionMethod end
 
 function ManifoldsBase.retract(M::AbstractManifold, p, X, ::InvariantExponentialRetraction)
-    return exp_inv(M, p, X)
+    return exp(M, p, X)
 end
 function ManifoldsBase.retract!(
-    M::AbstractManifold,
-    q,
-    p,
-    X,
-    ::InvariantExponentialRetraction,
-)
-    return exp_inv!(M, q, p, X)
+        M::AbstractManifold,
+        q,
+        p,
+        X,
+        ::InvariantExponentialRetraction,
+    )
+    return exp!(M, q, p, X)
 end
 
 function ManifoldsBase.retract(
-    M::AbstractDecoratorManifold,
-    p,
-    X,
-    ierm::InvariantExponentialRetraction,
-)
+        M::AbstractDecoratorManifold,
+        p,
+        X,
+        ierm::InvariantExponentialRetraction,
+    )
     return invoke(
         retract,
-        Tuple{AbstractManifold,Any,Any,InvariantExponentialRetraction},
+        Tuple{AbstractManifold, Any, Any, InvariantExponentialRetraction},
         M,
         p,
         X,
@@ -42,15 +41,15 @@ function ManifoldsBase.retract(
 end
 
 function ManifoldsBase.retract!(
-    M::AbstractDecoratorManifold,
-    q,
-    p,
-    X,
-    ierm::InvariantExponentialRetraction,
-)
+        M::AbstractDecoratorManifold,
+        q,
+        p,
+        X,
+        ierm::InvariantExponentialRetraction,
+    )
     return invoke(
         retract!,
-        Tuple{AbstractManifold,Any,Any,Any,InvariantExponentialRetraction},
+        Tuple{AbstractManifold, Any, Any, Any, InvariantExponentialRetraction},
         M,
         q,
         p,
@@ -60,35 +59,35 @@ function ManifoldsBase.retract!(
 end
 
 function ManifoldsBase.retract_fused(
-    M::AbstractManifold,
-    p,
-    X,
-    t::Real,
-    ::InvariantExponentialRetraction,
-)
+        M::AbstractManifold,
+        p,
+        X,
+        t::Real,
+        ::InvariantExponentialRetraction,
+    )
     return exp_inv(M, p, t * X)
 end
 function ManifoldsBase.retract_fused!(
-    M::AbstractManifold,
-    q,
-    p,
-    X,
-    t::Real,
-    ::InvariantExponentialRetraction,
-)
+        M::AbstractManifold,
+        q,
+        p,
+        X,
+        t::Real,
+        ::InvariantExponentialRetraction,
+    )
     return exp_inv!(M, q, p, t * X)
 end
 
 function ManifoldsBase.retract_fused(
-    M::AbstractDecoratorManifold,
-    p,
-    X,
-    t::Real,
-    ierm::InvariantExponentialRetraction,
-)
+        M::AbstractDecoratorManifold,
+        p,
+        X,
+        t::Real,
+        ierm::InvariantExponentialRetraction,
+    )
     return invoke(
         retract_fused,
-        Tuple{AbstractManifold,Any,Any,Real,InvariantExponentialRetraction},
+        Tuple{AbstractManifold, Any, Any, Real, InvariantExponentialRetraction},
         M,
         p,
         X,
@@ -98,16 +97,16 @@ function ManifoldsBase.retract_fused(
 end
 
 function ManifoldsBase.retract_fused!(
-    M::AbstractDecoratorManifold,
-    q,
-    p,
-    X,
-    t::Real,
-    ierm::InvariantExponentialRetraction,
-)
+        M::AbstractDecoratorManifold,
+        q,
+        p,
+        X,
+        t::Real,
+        ierm::InvariantExponentialRetraction,
+    )
     return invoke(
         retract_fused!,
-        Tuple{AbstractManifold,Any,Any,Any,Real,InvariantExponentialRetraction},
+        Tuple{AbstractManifold, Any, Any, Any, Real, InvariantExponentialRetraction},
         M,
         q,
         p,
@@ -120,32 +119,32 @@ end
 struct InvariantLogarithmicInverseRetraction <: AbstractInverseRetractionMethod end
 
 function ManifoldsBase.inverse_retract(
-    M::AbstractManifold,
-    p,
-    q,
-    ::InvariantLogarithmicInverseRetraction,
-)
+        M::AbstractManifold,
+        p,
+        q,
+        ::InvariantLogarithmicInverseRetraction,
+    )
     return log_inv(M, p, q)
 end
 function ManifoldsBase.inverse_retract!(
-    M::AbstractManifold,
-    X,
-    p,
-    q,
-    ::InvariantLogarithmicInverseRetraction,
-)
+        M::AbstractManifold,
+        X,
+        p,
+        q,
+        ::InvariantLogarithmicInverseRetraction,
+    )
     return log_inv!(M, X, p, q)
 end
 
 function ManifoldsBase.inverse_retract(
-    M::AbstractDecoratorManifold,
-    p,
-    q,
-    ierm::InvariantLogarithmicInverseRetraction,
-)
+        M::AbstractDecoratorManifold,
+        p,
+        q,
+        ierm::InvariantLogarithmicInverseRetraction,
+    )
     return invoke(
         inverse_retract,
-        Tuple{AbstractManifold,Any,Any,InvariantLogarithmicInverseRetraction},
+        Tuple{AbstractManifold, Any, Any, InvariantLogarithmicInverseRetraction},
         M,
         p,
         q,
@@ -154,15 +153,15 @@ function ManifoldsBase.inverse_retract(
 end
 
 function ManifoldsBase.inverse_retract!(
-    M::AbstractDecoratorManifold,
-    X,
-    p,
-    q,
-    ierm::InvariantLogarithmicInverseRetraction,
-)
+        M::AbstractDecoratorManifold,
+        X,
+        p,
+        q,
+        ierm::InvariantLogarithmicInverseRetraction,
+    )
     return invoke(
         inverse_retract!,
-        Tuple{AbstractManifold,Any,Any,Any,InvariantLogarithmicInverseRetraction},
+        Tuple{AbstractManifold, Any, Any, Any, InvariantLogarithmicInverseRetraction},
         M,
         X,
         p,
@@ -172,21 +171,21 @@ function ManifoldsBase.inverse_retract!(
 end
 
 function gen_data(
-    M::AbstractManifold,
-    p0,
-    fun_f,
-    fun_h,
-    fun_control,
-    noise_f_distr,
-    noise_h_distr;
-    N::Int=100,
-    dt::Real=0.01,
-    f_kwargs=(;),
-    retraction::AbstractRetractionMethod=InvariantExponentialRetraction(),
-    print_intermediates::Bool=false,
-)
+        M::AbstractManifold,
+        p0,
+        fun_f,
+        fun_h,
+        fun_control,
+        noise_f_distr,
+        noise_h_distr;
+        N::Int = 100,
+        dt::Real = 0.01,
+        f_kwargs = (;),
+        retraction::AbstractRetractionMethod = InvariantExponentialRetraction(),
+        print_intermediates::Bool = false,
+    )
     samples = [p0]
-    times = collect(range(0.0; step=dt, length=N + 1))
+    times = collect(range(0.0; step = dt, length = N + 1))
     controls = []
     measurements = [fun_h(p0, fun_control(0.0), rand(noise_h_distr), 0.0)]
     p_i = p0

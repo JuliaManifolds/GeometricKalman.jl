@@ -1,4 +1,3 @@
-
 using Manifolds, GeometricKalman, Test, LowLevelParticleFilters
 
 function gen_data_llpf()
@@ -18,12 +17,12 @@ function gen_data_llpf()
     D = zeros(0, 0)
     R2 = [1;;]
 
-    σw = 1e-2
+    σw = 1.0e-2
 
     # The dynamics noise covariance matrix is σw*Bw*Bw' where Bw = [Ts^2/2; Ts]
     R1 = σw * [
-        Ts^3/3 Ts^2/2
-        Ts^2/2 Ts
+        Ts^3 / 3 Ts^2 / 2
+        Ts^2 / 2 Ts
     ]
     kf = KalmanFilter(A, B, C, D, R1, R2)
     yh = []
@@ -47,11 +46,11 @@ end
     Mobs = Euclidean(1)
     Ts = 1.0
     A = [1.0 Ts; 0.0 1.0]
-    σw = 1e-2
+    σw = 1.0e-2
     p0 = [0.0, 0.0]
     # LowLevelParticleFilters takes Q matrix as the default initial covariance
-    P0 = σw * [Ts^3/3 Ts^2/2; Ts^2/2 Ts]
-    Q = σw * [Ts^3/3 Ts^2/2; Ts^2/2 Ts]
+    P0 = σw * [Ts^3 / 3 Ts^2 / 2; Ts^2 / 2 Ts]
+    Q = σw * [Ts^3 / 3 Ts^2 / 2; Ts^2 / 2 Ts]
     R = [1.0;;]
     kf = discrete_kalman_filter_manifold(
         Mstate,

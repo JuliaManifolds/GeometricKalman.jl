@@ -5,6 +5,9 @@ using LinearAlgebra
 using ManifoldsBase, Manifolds
 using ManifoldsBase: exp_fused, exp_fused!, retract_fused, retract_fused!
 using Manifolds: FiberBundleProductRetraction
+
+using LieGroups
+
 using Manopt
 
 using StatsBase
@@ -14,6 +17,7 @@ using Distributions
 
 using RecursiveArrayTools
 using ForwardDiff
+using FiniteDifferences
 
 using Rotations: Rotations
 

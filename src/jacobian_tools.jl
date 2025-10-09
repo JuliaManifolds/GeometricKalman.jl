@@ -1,18 +1,19 @@
-
 function default_jacobian_p_discrete(
-    M_arg::AbstractManifold,
-    M_val::AbstractManifold,
-    f;
-    jacobian_basis_arg::AbstractBasis=DefaultOrthonormalBasis(),
-    jacobian_basis_val::AbstractBasis=DefaultOrthonormalBasis(),
-    retraction::AbstractRetractionMethod=default_retraction_method(M_arg),
-    inverse_retraction::AbstractInverseRetractionMethod=default_inverse_retraction_method(
-        M_val,
-    ),
-)
+        M_arg::AbstractManifold,
+        M_val::AbstractManifold,
+        f;
+        jacobian_basis_arg::AbstractBasis = DefaultOrthonormalBasis(),
+        jacobian_basis_val::AbstractBasis = DefaultOrthonormalBasis(),
+        retraction::AbstractRetractionMethod = default_retraction_method(M_arg),
+        inverse_retraction::AbstractInverseRetractionMethod = default_inverse_retraction_method(
+            M_val,
+        ),
+    )
+    fdm = FiniteDifferences.central_fdm(5, 1)
     return function jacobian_p(p, q, w, t)
         f_val = f(p, q, w, t)
-        return ForwardDiff.jacobian(
+        return FiniteDifferences.jacobian(
+            fdm,
             _c -> get_coordinates(
                 M_val,
                 f_val,
@@ -35,21 +36,23 @@ function default_jacobian_p_discrete(
                 jacobian_basis_val,
             ),
             zeros(manifold_dimension(M_arg)),
-        )
+        )[1]
     end
 end
 
 function default_jacobian_w_discrete(
-    M::AbstractManifold,
-    f;
-    jacobian_basis::AbstractBasis=DefaultOrthonormalBasis(),
-    inverse_retraction::AbstractInverseRetractionMethod=default_inverse_retraction_method(
-        M,
-    ),
-)
+        M::AbstractManifold,
+        f;
+        jacobian_basis::AbstractBasis = DefaultOrthonormalBasis(),
+        inverse_retraction::AbstractInverseRetractionMethod = default_inverse_retraction_method(
+            M,
+        ),
+    )
+    fdm = FiniteDifferences.central_fdm(5, 1)
     return function jacobian_w(p, q, w, t)
         fp = f(p, q, w, t)
-        return ForwardDiff.jacobian(
+        return FiniteDifferences.jacobian(
+            fdm,
             _w -> get_coordinates(
                 M,
                 fp,
@@ -57,6 +60,6 @@ function default_jacobian_w_discrete(
                 jacobian_basis,
             ),
             w,
-        )
+        )[1]
     end
 end
