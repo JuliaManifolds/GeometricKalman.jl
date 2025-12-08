@@ -8,10 +8,10 @@ using GeometricKalman: default_discretization, car_f, car_h, gen_car_data
     dt = 0.01
     vt = 5
     times, samples, controls, measurements = gen_car_data(;
-        vt=vt,
-        N=200,
-        noise_f_distr=MvNormal([0.0, 0.0, 0.0], 1e3 * diagm([0.001, 1e-10, 1.0])),
-        noise_h_distr=MvNormal([0.0, 0.0], diagm([0.001, 0.001])),
+        vt = vt,
+        N = 200,
+        noise_f_distr = MvNormal([0.0, 0.0, 0.0], 1.0e3 * diagm([0.001, 1.0e-10, 1.0])),
+        noise_h_distr = MvNormal([0.0, 0.0], diagm([0.001, 0.001])),
     )
     M = SpecialEuclidean(2)
     M_obs = Euclidean(2)
@@ -19,31 +19,31 @@ using GeometricKalman: default_discretization, car_f, car_h, gen_car_data
     P0 = diagm([0.1, 0.1, 0.1])
     Q = diagm([0.5, 0.5, 2])
     R = diagm([0.001, 0.001])
-    car_f_adapted(p, q, noise, t::Real) = car_f(p, q, noise, t; vt=vt)
-    f_tilde = default_discretization(M, car_f_adapted; dt=dt)
+    car_f_adapted(p, q, noise, t::Real) = car_f(p, q, noise, t; vt = vt)
+    f_tilde = default_discretization(M, car_f_adapted; dt = dt)
 
-    sp = WanMerweSigmaPoints(; α=1.0)
+    sp = WanMerweSigmaPoints(; α = 1.0)
     params = [
         (
             "EKF",
-            (; propagator=EKFPropagator(M, f_tilde), updater=EKFUpdater(M, M_obs, car_h)),
+            (; propagator = EKFPropagator(M, f_tilde), updater = EKFUpdater(M, M_obs, car_h)),
         ),
         (
             "UKF",
             (;
-                propagator=UnscentedPropagator(M; sigma_points=sp),
-                updater=UnscentedUpdater(; sigma_points=sp),
+                propagator = UnscentedPropagator(M; sigma_points = sp),
+                updater = UnscentedUpdater(; sigma_points = sp),
             ),
         ),
         (
             "EKF adaptive α=0.99",
             (;
-                propagator=EKFPropagator(M, f_tilde),
-                updater=EKFUpdater(M, M_obs, car_h),
-                measurement_covariance_adapter=CovarianceMatchingMeasurementCovarianceAdapter(
+                propagator = EKFPropagator(M, f_tilde),
+                updater = EKFUpdater(M, M_obs, car_h),
+                measurement_covariance_adapter = CovarianceMatchingMeasurementCovarianceAdapter(
                     0.99,
                 ),
-                process_covariance_adapter=CovarianceMatchingProcessCovarianceAdapter(0.99),
+                process_covariance_adapter = CovarianceMatchingProcessCovarianceAdapter(0.99),
             ),
         ),
     ]

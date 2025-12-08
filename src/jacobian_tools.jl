@@ -1,15 +1,14 @@
-
 function default_jacobian_p_discrete(
-    M_arg::AbstractManifold,
-    M_val::AbstractManifold,
-    f;
-    jacobian_basis_arg::AbstractBasis=DefaultOrthonormalBasis(),
-    jacobian_basis_val::AbstractBasis=DefaultOrthonormalBasis(),
-    retraction::AbstractRetractionMethod=default_retraction_method(M_arg),
-    inverse_retraction::AbstractInverseRetractionMethod=default_inverse_retraction_method(
-        M_val,
-    ),
-)
+        M_arg::AbstractManifold,
+        M_val::AbstractManifold,
+        f;
+        jacobian_basis_arg::AbstractBasis = DefaultOrthonormalBasis(),
+        jacobian_basis_val::AbstractBasis = DefaultOrthonormalBasis(),
+        retraction::AbstractRetractionMethod = default_retraction_method(M_arg),
+        inverse_retraction::AbstractInverseRetractionMethod = default_inverse_retraction_method(
+            M_val,
+        ),
+    )
     return function jacobian_p(p, q, w, t)
         f_val = f(p, q, w, t)
         return ForwardDiff.jacobian(
@@ -40,13 +39,13 @@ function default_jacobian_p_discrete(
 end
 
 function default_jacobian_w_discrete(
-    M::AbstractManifold,
-    f;
-    jacobian_basis::AbstractBasis=DefaultOrthonormalBasis(),
-    inverse_retraction::AbstractInverseRetractionMethod=default_inverse_retraction_method(
-        M,
-    ),
-)
+        M::AbstractManifold,
+        f;
+        jacobian_basis::AbstractBasis = DefaultOrthonormalBasis(),
+        inverse_retraction::AbstractInverseRetractionMethod = default_inverse_retraction_method(
+            M,
+        ),
+    )
     return function jacobian_w(p, q, w, t)
         fp = f(p, q, w, t)
         return ForwardDiff.jacobian(
