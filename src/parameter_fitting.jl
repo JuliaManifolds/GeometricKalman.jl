@@ -1,4 +1,3 @@
-
 """
     abstract type AbstractKFOParametrization end
 
@@ -20,8 +19,8 @@ the set of parameters over which optimization is performed.
 """
 get_inits(pfo::AbstractKFOParametrization, p_opt)
 
-struct InitialConditionKFOParametrization{TAM<:AbstractMatrix{<:Real}} <:
-       AbstractKFOParametrization
+struct InitialConditionKFOParametrization{TAM <: AbstractMatrix{<:Real}} <:
+    AbstractKFOParametrization
     Q::TAM
     R::TAM
 end
@@ -31,21 +30,21 @@ function get_inits(pfo::InitialConditionKFOParametrization, p_opt::ArrayPartitio
 end
 
 struct KalmanParameterFittingObjective{
-    TM<:AbstractManifold,
-    TM_obs<:AbstractManifold,
-    TM_obj<:AbstractManifold,
-    TM_fit<:AbstractManifold,
-    TB<:AbstractBasis,
-    TFT,
-    TH,
-    TFKW,
-    TP<:AbstractKFOParametrization,
-    TOE,
-    TRS,
-    TRC,
-    TRM,
-    TZMC,
-}
+        TM <: AbstractManifold,
+        TM_obs <: AbstractManifold,
+        TM_obj <: AbstractManifold,
+        TM_fit <: AbstractManifold,
+        TB <: AbstractBasis,
+        TFT,
+        TH,
+        TFKW,
+        TP <: AbstractKFOParametrization,
+        TOE,
+        TRS,
+        TRC,
+        TRM,
+        TZMC,
+    }
     M::TM
     M_obs::TM_obs
     M_obj::TM_obj
@@ -65,20 +64,20 @@ end
 """
 """
 function make_kalman_parameter_fitting_objective(
-    M::AbstractManifold, # where state evolves
-    M_obs::AbstractManifold, # where observation happen
-    M_obj::AbstractManifold, # where ref_obj_vals and values returned by obj_extractor live
-    M_fit::AbstractManifold, # where arguments to the objective live
-    f_tilde,
-    h,
-    filter_kwargs,
-    kf_parametrization,
-    obj_extractor,
-    ref_obj_vals,
-    ref_controls,
-    ref_measurements;
-    jacobian_basis_arg::AbstractBasis=DefaultOrthonormalBasis(),
-)
+        M::AbstractManifold, # where state evolves
+        M_obs::AbstractManifold, # where observation happen
+        M_obj::AbstractManifold, # where ref_obj_vals and values returned by obj_extractor live
+        M_fit::AbstractManifold, # where arguments to the objective live
+        f_tilde,
+        h,
+        filter_kwargs,
+        kf_parametrization,
+        obj_extractor,
+        ref_obj_vals,
+        ref_controls,
+        ref_measurements;
+        jacobian_basis_arg::AbstractBasis = DefaultOrthonormalBasis(),
+    )
     zero_M_fit_coordinates = zeros(manifold_dimension(M_fit))
     return KalmanParameterFittingObjective(
         M,
@@ -129,9 +128,9 @@ end
 function residuals(pfo::KalmanParameterFittingObjective, p_opt)
     res =
         Vector{Base.promote_op(+, number_eltype(p_opt), number_eltype(pfo.ref_obj_vals[1]))}(
-            undef,
-            length(pfo.ref_controls),
-        )
+        undef,
+        length(pfo.ref_controls),
+    )
     residuals!(pfo, res, p_opt)
     return res
 end

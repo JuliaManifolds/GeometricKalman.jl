@@ -9,7 +9,7 @@ using GeometricKalman: car_f, car_h, car_control, gen_data
     N = 200
     dt = 0.01
     p0 = identity_element(M)
-    noise_f_distr = MvNormal([0.0, 0.0, 0.0], 1e3 * diagm([0.001, 1e-10, 1.0]))
+    noise_f_distr = MvNormal([0.0, 0.0, 0.0], 1.0e3 * diagm([0.001, 1.0e-10, 1.0]))
     noise_h_distr = MvNormal([0.0, 0.0], diagm([0.001, 0.001]))
     vt = 0.2
 
@@ -21,9 +21,9 @@ using GeometricKalman: car_f, car_h, car_control, gen_data
         car_control,
         noise_f_distr,
         noise_h_distr;
-        N=N,
-        dt=dt,
-        f_kwargs=(; vt=vt),
+        N = N,
+        dt = dt,
+        f_kwargs = (; vt = vt),
     )
 
     for p in samples
