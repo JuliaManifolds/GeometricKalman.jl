@@ -16,7 +16,7 @@ StatsBase = "2913bbd2-ae8a-5f71-8c99-4fb6c76f3a91"
 
 [compat]
 Distributions = "0.25.115"
-ForwardDiff = "0.10.38"
+ForwardDiff = "0.10.38, 1"
 Manifolds = "0.10.8"
 ManifoldsBase = "1"
 Manopt = "0.5.4"
