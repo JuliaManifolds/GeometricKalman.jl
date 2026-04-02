@@ -1,7 +1,7 @@
 name = "GeometricKalman"
 uuid = "37c64ece-753e-4456-a3c8-f0622d3cd54c"
-authors = ["Mateusz Baran <mateuszbaran89@gmail.com>", "Ronny Bergmann <manopt@ronnybergmann.net>"]
 version = "0.1.0"
+authors = ["Mateusz Baran <mateuszbaran89@gmail.com>", "Ronny Bergmann <manopt@ronnybergmann.net>"]
 
 [deps]
 Distributions = "31c24e10-a181-5473-b8eb-7969acd0382f"
@@ -20,7 +20,7 @@ ForwardDiff = "0.10.38"
 Manifolds = "0.10.8"
 ManifoldsBase = "1"
 Manopt = "0.5.4"
-RecursiveArrayTools = "3.27.4"
+RecursiveArrayTools = "3.27.4, 4"
 Rotations = "1.7.1"
 StatsBase = "0.34.3"
 julia = "1.10"
