@@ -15,6 +15,9 @@ RecursiveArrayTools = "731186ca-8d62-57ce-b412-fbd966d074cd"
 StaticArrays = "90137ffa-7385-5640-81b9-e52037218182"
 Test = "8dfed614-e22c-5e08-85e1-65c5234f0b40"
 
+[sources.GeometricKalman]
+path = ".."
+
 [compat]
 CondaPkg = "0.2"
 Distributions = "0.25"
@@ -28,8 +31,5 @@ ManifoldsBase = "1"
 Plots = "1"
 PythonPlot = "1"
 RecipesBase = "1"
-RecursiveArrayTools = "3"
+RecursiveArrayTools = "3, 4"
 StaticArrays = "1.0"
-
-[sources]
-GeometricKalman = { path = ".." }
